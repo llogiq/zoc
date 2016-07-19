@@ -79,7 +79,7 @@ mod tests {
     use std::f32::consts::{PI};
     use num::{Float};
     use cgmath::{Vector3};
-    use common::types::{ZFloat};
+    use core::types::{ZFloat};
     use ::types::{WorldPos};
     use super::{get_rot_angle, index_to_circle_vertex};
 
