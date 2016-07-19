@@ -3,7 +3,7 @@
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::f32::consts::{PI};
 use rand::{thread_rng, Rng};
-use std::path::{Path};
+// use std::path::{Path};
 use std::collections::{HashMap};
 use cgmath::{
     Vector2,
@@ -19,14 +19,15 @@ use cgmath::{
 use collision::{Plane, Ray, Intersect};
 use glutin::{self, VirtualKeyCode, Event, MouseButton};
 use glutin::ElementState::{Released};
-use common::types::{Size2, ZInt, ZFloat};
-use zgl::types::{ScreenPos, VertexCoord, TextureCoord, Time, WorldPos};
-use zgl::misc::{add_quad_to_vec};
-use zgl::{self, Zgl, MeshRenderMode};
-use zgl::mesh::{Mesh, MeshId};
-use zgl::camera::Camera;
-use core::map::{Map, Terrain, spiral_iter};
-use core::dir::{Dir, dirs};
+use gfx;
+use gfx::traits::{FactoryExt};
+use gfx_gl;
+use core::types::{Size2, ZInt, ZFloat};
+// use zgl::types::{ScreenPos, VertexCoord, TextureCoord, Time, WorldPos};
+// use zgl::{self, Zgl, MeshRenderMode};
+// use zgl::mesh::{Mesh, MeshId};
+use core::map::{/*Map,*/ Terrain, spiral_iter};
+use core::dir::{/*Dir,*/ dirs};
 use core::partial_state::{PartialState};
 use core::game_state::{GameState, GameStateMut};
 use core::pathfinder::{Pathfinder};
@@ -37,7 +38,7 @@ use core::{
     Command,
     MoveMode,
     ReactionFireMode,
-    MovePoints,
+    // MovePoints,
     UnitId,
     PlayerId,
     MapPos,
@@ -50,9 +51,10 @@ use core::{
     get_free_exact_pos,
 };
 use core::db::{Db};
-use zgl::texture::{Texture};
-use zgl::obj;
-use zgl::font_stash::{FontStash};
+// use zgl::texture::{Texture};
+use obj;
+// use zgl::font_stash::{FontStash};
+use camera::Camera;
 use gui::{ButtonManager, Button, ButtonId, is_tap};
 use scene::{Scene, SceneNode};
 use event_visualizer::{
@@ -71,13 +73,16 @@ use unit_type_visual_info::{
     UnitTypeVisualInfo,
     UnitTypeVisualInfoManager,
 };
-use selection::{SelectionManager, get_selection_mesh};
+// use selection::{SelectionManager, get_selection_mesh};
 use map_text::{MapTextManager};
-use context::{Context};
+use context::{Context, load_texture};
+use ::{Vertex, pipe};
+use core::fs;
 use geom;
 use screen::{Screen, ScreenCommand, EventStatus};
 use context_menu_popup::{self, ContextMenuPopup};
-use end_turn_screen::{EndTurnScreen};
+// use end_turn_screen::{EndTurnScreen};
+use types::{ScreenPos, WorldPos, MeshId, VertexCoord, TextureCoord};
 
 fn get_initial_camera_pos(map_size: &Size2) -> WorldPos {
     let pos = get_max_camera_pos(map_size);
@@ -90,40 +95,63 @@ fn get_max_camera_pos(map_size: &Size2) -> WorldPos {
     WorldPos{v: Vector3{x: -pos.v.x, y: -pos.v.y, z: 0.0}}
 }
 
+struct Mesh {
+    // ...
+    slice: gfx::Slice<gfx_gl::Resources>,
+    // data: pipe::Data<gfx_gl::Resources>,
+    vertex_buffer: gfx::handle::Buffer<gfx_gl::Resources, Vertex>,
+}
+
+impl Mesh {
+    fn new(context: &Context, vertices: &[Vertex], indices: &[u16]) -> Mesh {
+        let (v, s) = context.factory.create_vertex_buffer_with_slice(vertices, indices);
+        Mesh {
+            slice: s,
+            vertex_buffer: v,
+            // data: v,
+        }
+    }
+}
+
 // TODO: `cond: F` -> `enum NameMe{Visible, Fogged}`
-fn gen_tiles<F>(zgl: &Zgl, state: &PartialState, tex: &Texture, cond: F) -> Mesh
+fn gen_tiles<F>(context: &Context, state: &PartialState, /*tex: &Texture,*/ cond: F) -> Mesh
     where F: Fn(bool) -> bool
 {
     let mut vertex_data = Vec::new();
-    let mut tex_data = Vec::new();
     for tile_pos in state.map().get_iter() {
         if !cond(state.is_tile_visible(&tile_pos)) {
             continue;
         }
         let pos = geom::map_pos_to_world_pos(&tile_pos);
+        vertex_data.push(Vertex {
+            // v: pos.v + vertex.v
+            pos: [0.8, 0.8, 0.0],
+            uv: [1.0, 0.0],
+        });
         for dir in dirs() {
-            let num = dir.to_int();
-            let vertex = geom::index_to_hex_vertex(num);
-            let next_vertex = geom::index_to_hex_vertex(num + 1);
-            vertex_data.push(VertexCoord{v: pos.v + vertex.v});
-            vertex_data.push(VertexCoord{v: pos.v + next_vertex.v});
-            vertex_data.push(VertexCoord{v: pos.v});
-            tex_data.push(TextureCoord{v: Vector2{x: 0.0, y: 0.0}});
-            tex_data.push(TextureCoord{v: Vector2{x: 1.0, y: 0.0}});
-            tex_data.push(TextureCoord{v: Vector2{x: 0.5, y: 0.5}});
+            // let num = dir.to_int();
+            // let vertex = geom::index_to_hex_vertex(num);
+            // let next_vertex = geom::index_to_hex_vertex(num + 1);
+            // vertex_data.push(VertexCoord{v: pos.v + vertex.v});
+            // vertex_data.push(VertexCoord{v: pos.v + next_vertex.v});
+            // vertex_data.push(VertexCoord{v: pos.v});
+            // tex_data.push(TextureCoord{v: Vector2{x: 0.0, y: 0.0}});
+            // tex_data.push(TextureCoord{v: Vector2{x: 1.0, y: 0.0}});
+            // tex_data.push(TextureCoord{v: Vector2{x: 0.5, y: 0.5}});
         }
     }
-    let mut mesh = Mesh::new(zgl, &vertex_data);
-    mesh.add_texture(zgl, tex.clone(), &tex_data);
+    let mut mesh = Mesh::new(context, &vertex_data);
+    // mesh.add_texture(context, tex.clone(), &tex_data);
     mesh
 }
 
-fn generate_visible_tiles_mesh(zgl: &Zgl, state: &PartialState, tex: &Texture) -> Mesh {
-    gen_tiles(zgl, state, tex, |vis| vis)
+/*
+fn generate_visible_tiles_mesh(context: &Context, state: &PartialState, tex: &Texture) -> Mesh {
+    gen_tiles(context, state, tex, |vis| vis)
 }
 
-fn generate_fogged_tiles_mesh(zgl: &Zgl, state: &PartialState, tex: &Texture) -> Mesh {
-    gen_tiles(zgl, state, tex, |vis| !vis)
+fn generate_fogged_tiles_mesh(context: &Context, state: &PartialState, tex: &Texture) -> Mesh {
+    gen_tiles(context, state, tex, |vis| !vis)
 }
 
 fn build_walkable_mesh(
@@ -238,6 +266,7 @@ fn load_object_mesh(zgl: &Zgl, name: &str) -> Mesh {
     }
     mesh
 }
+*/
 
 fn get_marker_mesh_id<'a>(mesh_ids: &'a MeshIdManager, player_id: &PlayerId) -> &'a MeshId {
     match player_id.id {
@@ -256,18 +285,20 @@ struct MeshIdManager {
     marker_2_mesh_id: MeshId,
 }
 
+/*
 fn add_mesh(meshes: &mut Vec<Mesh>, mesh: Mesh) -> MeshId {
     meshes.push(mesh);
     MeshId{id: (meshes.len() as ZInt) - 1}
 }
+*/
 
 fn get_unit_type_visual_info(
     db: &Db,
-    zgl: &Zgl,
-    meshes: &mut Vec<Mesh>,
+    _context: &mut Context,
+    // meshes: &mut Vec<Mesh>,
 ) -> UnitTypeVisualInfoManager {
     let mut manager = UnitTypeVisualInfoManager::new();
-    for &(unit_name, model_name, move_speed) in &[
+    for &(unit_name, _model_name, move_speed) in &[
         ("soldier", "soldier", 2.0),
         ("smg", "submachine", 2.0),
         ("scout", "scout", 2.5),
@@ -282,7 +313,8 @@ fn get_unit_type_visual_info(
         ("jeep", "jeep", 3.5),
     ] {
         manager.add_info(&db.unit_type_id(unit_name), UnitTypeVisualInfo {
-            mesh_id: add_mesh(meshes, load_object_mesh(zgl, model_name)),
+            // mesh_id: add_mesh(meshes, load_object_mesh(zgl, model_name)),
+            mesh_id: MeshId{id: 0},
             move_speed: move_speed,
         });
     }
@@ -342,18 +374,21 @@ pub struct TacticalScreen {
     event: Option<CoreEvent>,
     event_visualizer: Option<Box<EventVisualizer>>,
     mesh_ids: MeshIdManager,
-    meshes: Vec<Mesh>,
+    // meshes: Vec<Mesh>,
     unit_type_visual_info: UnitTypeVisualInfoManager,
     selected_unit_id: Option<UnitId>,
-    selection_manager: SelectionManager,
-    // TODO: move to 'meshes'
-    walkable_mesh: Option<Mesh>,
-    targets_mesh: Option<Mesh>,
-    visible_map_mesh: Mesh,
-    fow_map_mesh: Mesh,
-    floor_tex: Texture,
+    // selection_manager: SelectionManager,
+    // // TODO: move to 'meshes'
+    // walkable_mesh: Option<Mesh>,
+    // targets_mesh: Option<Mesh>,
+    // visible_map_mesh: Mesh,
+    // fow_map_mesh: Mesh,
+    // floor_tex: Texture,
     tx: Sender<context_menu_popup::Command>,
     rx: Receiver<context_menu_popup::Command>,
+
+    slice: gfx::Slice<gfx_gl::Resources>,
+    data: pipe::Data<gfx_gl::Resources>,
 }
 
 impl TacticalScreen {
@@ -361,7 +396,8 @@ impl TacticalScreen {
         let core = Core::new(core_options);
         let map_size = core.map_size().clone();
         let player_info = PlayerInfoManager::new(&map_size, core_options);
-        let floor_tex = Texture::new(&context.zgl, "floor.png"); // TODO: !!!
+        // let floor_tex = Texture::new(&context.zgl, "floor.png"); // TODO: !!!
+        /*
         let mut meshes = Vec::new();
         let visible_map_mesh = generate_visible_tiles_mesh(
             &context.zgl, &player_info.get(core.player_id()).game_state, &floor_tex);
@@ -381,14 +417,18 @@ impl TacticalScreen {
             &mut meshes, get_marker(&context.zgl, "flag1.png"));
         let marker_2_mesh_id = add_mesh(
             &mut meshes, get_marker(&context.zgl, "flag2.png"));
+        */
         let unit_type_visual_info
-            = get_unit_type_visual_info(core.db(), &context.zgl, &mut meshes);
+            // = get_unit_type_visual_info(core.db(), &mut context, &mut meshes);
+            = get_unit_type_visual_info(core.db(), context);
         let mut camera = Camera::new(&context.win_size);
         camera.set_max_pos(get_max_camera_pos(&map_size));
-        camera.set_pos(get_initial_camera_pos(&map_size));
+        // camera.set_pos(get_initial_camera_pos(&map_size)); // TODO
+        /*
         let font_size = 40.0;
         let mut font_stash = FontStash::new(
             &context.zgl, "DroidSerif-Regular.ttf", font_size);
+        */
         let mut button_manager = ButtonManager::new();
         let mut pos = ScreenPos{v: Vector2{x: 10, y: 10}};
         let button_end_turn_id = button_manager.add_button(
@@ -403,15 +443,57 @@ impl TacticalScreen {
         let button_next_unit_id = button_manager.add_button(
             Button::new(context, "[>]", &pos));
         let mesh_ids = MeshIdManager {
-            big_building_mesh_w_id: big_building_mesh_w_id,
-            building_mesh_w_id: building_mesh_w_id,
-            trees_mesh_id: trees_mesh_id,
-            shell_mesh_id: shell_mesh_id,
-            marker_1_mesh_id: marker_1_mesh_id,
-            marker_2_mesh_id: marker_2_mesh_id,
+            // big_building_mesh_w_id: big_building_mesh_w_id,
+            // building_mesh_w_id: building_mesh_w_id,
+            // trees_mesh_id: trees_mesh_id,
+            // shell_mesh_id: shell_mesh_id,
+            // marker_1_mesh_id: marker_1_mesh_id,
+            // marker_2_mesh_id: marker_2_mesh_id,
+            big_building_mesh_w_id: MeshId{id: 0},
+            building_mesh_w_id: MeshId{id: 0},
+            trees_mesh_id: MeshId{id: 0},
+            shell_mesh_id: MeshId{id: 0},
+            marker_1_mesh_id: MeshId{id: 0},
+            marker_2_mesh_id: MeshId{id: 0},
         };
-        let map_text_manager = MapTextManager::new(&mut font_stash);
+        let map_text_manager = MapTextManager::new(/*&mut font_stash*/);
         let (tx, rx) = channel();
+
+        {
+            // TODO: просто что бы было
+            let obj = obj::Model::new(&format!("{}.obj", "tank"));
+            let _ = obj.build();
+            let _ = obj.build_tex_coord();
+            let _ = obj.is_wire();
+        }
+
+        let index_data: &[u16] = &[0,  1,  2,  1,  2,  3];
+        let vertex_data = &[
+            Vertex{pos: [-0.8, -0.8, 0.0], uv: [0.0, 1.0]},
+            Vertex{pos: [-0.8, 0.8, 0.0], uv: [0.0, 0.0]},
+            Vertex{pos: [0.8, -0.8, 0.0], uv: [1.0, 1.0]},
+            Vertex{pos: [0.8, 0.8, 0.0], uv: [1.0, 0.0]},
+        ];
+        let (vertex_buffer, slice) = context.factory.create_vertex_buffer_with_slice(
+            vertex_data, index_data);
+        let test_texture = load_texture(
+            &mut context.factory, &fs::load("tank.png").into_inner()); // TODO
+
+        // мне нужна своя дата или надо кнтекстную менять?
+        // let mvp = view_matrix(
+        //     Rad::new(PI / 6.0),
+        //     Rad::new(-PI / 2.0 + PI / 8.0),
+        //     3.0,
+        //     1.0,
+        // );
+        let data = pipe::Data {
+            vbuf: vertex_buffer.clone(),
+            texture: (test_texture, context.sampler.clone()),
+            out: context.main_color.clone(),
+            mvp: camera.mat().into(),
+        };
+
+
         let mut screen = TacticalScreen {
             camera: camera,
             button_manager: button_manager,
@@ -424,25 +506,27 @@ impl TacticalScreen {
             event: None,
             event_visualizer: None,
             mesh_ids: mesh_ids,
-            meshes: meshes,
+            // meshes: meshes,
             unit_type_visual_info: unit_type_visual_info,
             selected_unit_id: None,
-            selection_manager: SelectionManager::new(selection_marker_mesh_id),
-            walkable_mesh: None,
-            targets_mesh: None,
+            // selection_manager: SelectionManager::new(selection_marker_mesh_id),
+            // walkable_mesh: None,
+            // targets_mesh: None,
             map_text_manager: map_text_manager,
-            visible_map_mesh: visible_map_mesh,
-            fow_map_mesh: fow_map_mesh,
-            floor_tex: floor_tex,
+            // visible_map_mesh: visible_map_mesh,
+            // fow_map_mesh: fow_map_mesh,
+            // floor_tex: floor_tex,
             tx: tx,
             rx: rx,
+            slice: slice,
+            data: data,
         };
         screen.add_map_objects();
         screen
     }
 
     fn pick_world_pos(&self, context: &Context) -> WorldPos {
-        let im = self.camera.mat(&context.zgl).invert()
+        let im = self.camera.mat().invert()
             .expect("Can`t invert camera matrix");
         let w = context.win_size.w as ZFloat;
         let h = context.win_size.h as ZFloat;
@@ -507,11 +591,11 @@ impl TacticalScreen {
         }
     }
 
-    fn end_turn(&mut self, context: &mut Context) {
+    fn end_turn(&mut self, _context: &mut Context) {
         if self.player_info.info.len() > 1 {
-            let next_id = self.core.next_player_id(self.core.player_id());
-            let screen = Box::new(EndTurnScreen::new(context, &next_id));
-            context.add_command(ScreenCommand::PushScreen(screen));
+            let _next_id = self.core.next_player_id(self.core.player_id());
+            // let screen = Box::new(EndTurnScreen::new(context, &next_id));
+            // context.add_command(ScreenCommand::PushScreen(screen));
         }
         self.deselect_unit();
         self.core.do_command(Command::EndTurn);
@@ -519,10 +603,12 @@ impl TacticalScreen {
 
     fn deselect_unit(&mut self) {
         self.selected_unit_id = None;
-        let i = self.player_info.get_mut(self.core.player_id());
+        let _i = self.player_info.get_mut(self.core.player_id());
+        /*
         self.selection_manager.deselect(&mut i.scene);
         self.walkable_mesh = None;
         self.targets_mesh = None;
+        */
     }
 
     fn current_state(&self) -> &PartialState {
@@ -663,19 +749,19 @@ impl TacticalScreen {
     }
 
     // TODO: add ability to select enemy units
-    fn select_unit(&mut self, context: &Context, unit_id: &UnitId) {
+    fn select_unit(&mut self, _context: &Context, unit_id: &UnitId) {
         self.selected_unit_id = Some(unit_id.clone());
         let mut i = self.player_info.get_mut(self.core.player_id());
         let state = &i.game_state;
         let pf = &mut i.pathfinder;
         pf.fill_map(self.core.db(), state, state.unit(unit_id));
-        self.walkable_mesh = Some(build_walkable_mesh(
-            &context.zgl, pf, state.map(), &state.unit(unit_id).move_points));
-        self.targets_mesh = Some(build_targets_mesh(
-            self.core.db(), &context.zgl, state, unit_id));
-        let scene = &mut i.scene;
-        self.selection_manager.create_selection_marker(
-            state, scene, unit_id);
+        // self.walkable_mesh = Some(build_walkable_mesh(
+        //     &context.zgl, pf, state.map(), &state.unit(unit_id).move_points));
+        // self.targets_mesh = Some(build_targets_mesh(
+        //     self.core.db(), &context.zgl, state, unit_id));
+        // let scene = &mut i.scene;
+        // self.selection_manager.create_selection_marker(
+        //     state, scene, unit_id);
     }
 
     fn move_unit(&mut self, pos: &ExactPos, move_mode: &MoveMode) {
@@ -760,6 +846,7 @@ impl TacticalScreen {
     }
 
     fn handle_event_key_press(&mut self, context: &mut Context, key: VirtualKeyCode) {
+        println!("TacticalScreen::handle_event_key_press");
         let camera_move_speed_on_keypress = geom::HEX_EX_RADIUS;
         let s = camera_move_speed_on_keypress;
         match key {
@@ -841,10 +928,11 @@ impl TacticalScreen {
 
     fn draw_scene_node(
         &self,
-        context: &Context,
-        node: &SceneNode,
-        m: Matrix4<ZFloat>,
+        _context: &Context,
+        _node: &SceneNode,
+        _m: Matrix4<ZFloat>,
     ) {
+        /*
         let m = context.zgl.tr(m, &node.pos.v);
         let m = context.zgl.rot_z(m, &node.rot);
         if let Some(ref mesh_id) = node.mesh_id {
@@ -856,48 +944,58 @@ impl TacticalScreen {
         for node in &node.children {
             self.draw_scene_node(context, node, m);
         }
+        */
     }
 
     fn draw_scene_nodes(&self, context: &Context) {
         for (_, node) in self.scene().nodes() {
-            let m = self.camera.mat(&context.zgl);
+            let m = self.camera.mat();
             self.draw_scene_node(context, node, m);
         }
     }
 
-    fn draw_map(&mut self, context: &Context) {
-        context.shader.set_uniform_mat4f(
-            &context.zgl,
-            context.shader.get_mvp_mat(),
-            &self.camera.mat(&context.zgl),
-        );
-        context.set_basic_color(&zgl::GREY);
-        self.fow_map_mesh.draw(&context.zgl, &context.shader);
-        context.set_basic_color(&zgl::WHITE);
-        self.visible_map_mesh.draw(&context.zgl, &context.shader);
+    fn draw_map(&mut self, context: &mut Context) {
+        self.data.mvp = self.camera.mat().into();
+        context.encoder.draw(&self.slice, &context.pso, &self.data); // рисуем тестовое что-то там
+        // context.shader.set_uniform_mat4f(
+        //     &context.zgl,
+        //     context.shader.get_mvp_mat(),
+        //     &self.camera.mat(&context.zgl),
+        // );
+        context.set_basic_color(&::GREY);
+        // self.fow_map_mesh.draw(&context.zgl, &context.shader);
+        context.set_basic_color(&::WHITE);
+        // self.visible_map_mesh.draw(&context.zgl, &context.shader);
     }
 
-    fn draw_scene(&mut self, context: &Context, dtime: &Time) {
-        context.set_basic_color(&zgl::WHITE);
+    fn draw_scene(&mut self, context: &mut Context, dtime: u64) {
+        context.set_basic_color(&::WHITE);
         self.draw_scene_nodes(context);
         self.draw_map(context);
+        /*
         if let Some(ref walkable_mesh) = self.walkable_mesh {
-            context.set_basic_color(&zgl::BLUE);
+            context.set_basic_color(&::BLUE);
             walkable_mesh.draw(&context.zgl, &context.shader);
         }
         if let Some(ref targets_mesh) = self.targets_mesh {
-            context.set_basic_color(&zgl::RED);
+            context.set_basic_color(&::RED);
             targets_mesh.draw(&context.zgl, &context.shader);
         }
+        */
         if let Some(ref mut event_visualizer) = self.event_visualizer {
             let i = self.player_info.get_mut(self.core.player_id());
             event_visualizer.draw(&mut i.scene, dtime);
         }
     }
 
-    fn draw(&mut self, context: &mut Context, dtime: &Time) {
+    fn draw(&mut self, context: &mut Context, dtime: u64) {
+        {
+            // TODO: временное нечто для проверки что что-то вообще работает
+            context.clear_color = [0.9, 0.2, 0.2, 1.0];
+            context.encoder.clear(&context.main_color, context.clear_color);
+        }
         self.draw_scene(context, dtime);
-        context.set_basic_color(&zgl::BLACK);
+        context.set_basic_color(&::BLACK);
         self.map_text_manager.draw(context, &self.camera, dtime);
         self.button_manager.draw(&context);
     }
@@ -1039,10 +1137,10 @@ impl TacticalScreen {
         if self.is_event_visualization_finished() {
             self.end_event_visualization(context);
         } else {
-            let i = &mut self.player_info.get_mut(self.core.player_id());
-            self.selection_manager.deselect(&mut i.scene);
-            self.walkable_mesh = None;
-            self.targets_mesh = None;
+            let _i = &mut self.player_info.get_mut(self.core.player_id());
+            // self.selection_manager.deselect(&mut i.scene);
+            // self.walkable_mesh = None;
+            // self.targets_mesh = None;
         }
     }
 
@@ -1075,10 +1173,10 @@ impl TacticalScreen {
             let state = &mut i.game_state;
             self.event_visualizer.as_mut().unwrap().end(scene, state);
             state.apply_event(self.core.db(), self.event.as_ref().unwrap());
-            self.visible_map_mesh = generate_visible_tiles_mesh(
-                &context.zgl, state, &self.floor_tex);
-            self.fow_map_mesh = generate_fogged_tiles_mesh(
-                &context.zgl, state, &self.floor_tex);
+            // self.visible_map_mesh = generate_visible_tiles_mesh(
+            //     &context.zgl, state, &self.floor_tex);
+            // self.fow_map_mesh = generate_fogged_tiles_mesh(
+            //     &context.zgl, state, &self.floor_tex);
         }
         self.event_visualizer = None;
         self.event = None;
@@ -1166,7 +1264,8 @@ impl TacticalScreen {
 }
 
 impl Screen for TacticalScreen {
-    fn tick(&mut self, context: &mut Context, dtime: &Time) {
+    fn tick(&mut self, context: &mut Context, dtime: u64) {
+        // println!("TacticalScreen::tick");
         self.logic(context);
         self.draw(context, dtime);
         self.handle_context_menu_popup_commands(context);

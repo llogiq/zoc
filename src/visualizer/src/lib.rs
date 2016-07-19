@@ -1,70 +1,141 @@
 // See LICENSE file for copyright and license details.
 
+#[macro_use]
+extern crate gfx;
+
+extern crate gfx_window_glutin as gfx_glutin;
+extern crate gfx_device_gl as gfx_gl;
 extern crate num;
 extern crate rand;
 extern crate time;
 extern crate cgmath;
 extern crate collision;
 extern crate glutin;
-extern crate common;
 extern crate core;
-extern crate zgl;
+extern crate image;
 
 mod gui;
+mod obj;
 mod scene;
 mod event_visualizer;
 mod unit_type_visual_info;
-mod selection;
+// mod selection;
 mod map_text;
 mod move_helper;
+mod camera;
 mod geom;
 mod screen;
 mod tactical_screen;
 mod context_menu_popup;
 mod main_menu_screen;
-mod end_turn_screen;
+// mod end_turn_screen;
 mod context;
 
+// TODO: убрать в честный модуль
+pub mod types {
+    use gfx;
+    use cgmath::{Vector3, Vector2};
+
+    pub use core::types::{ZInt, ZFloat, Size2};
+
+    // TODO: вынести куда-нибудь, это же вообще не типы
+    pub type ColorFormat = gfx::format::Srgba8;
+    pub type DepthFormat = gfx::format::DepthStencil;
+    pub type SurfaceFormat = gfx::format::R8_G8_B8_A8;
+    pub type FullFormat = (SurfaceFormat, gfx::format::Unorm);
+
+    // // TODO: тоже спрятать в отдельный модуль, misc или что такое
+    // // Или оно вообще нафиг не нужно, раз у меня теперь везде индексы?
+    // pub fn add_quad_to_vec<T: Clone>(v: &mut Vec<T>, v1: T, v2: T, v3: T, v4: T) {
+    //     v.push(v1.clone());
+    //     v.push(v2);
+    //     v.push(v3.clone());
+    //     v.push(v1);
+    //     v.push(v3);
+    //     v.push(v4);
+    // }
+
+    // это надо вынести в какой-то отдельный модуль
+    #[derive(Copy, Clone)]
+    pub struct Color3 {
+        pub r: ZFloat,
+        pub g: ZFloat,
+        pub b: ZFloat,
+    }
+
+    #[derive(Copy, Clone)]
+    pub struct Color4 {
+        pub r: ZFloat,
+        pub g: ZFloat,
+        pub b: ZFloat,
+        pub a: ZFloat,
+    }
+
+    #[derive(Copy, Clone)]
+    pub struct WorldPos{pub v: Vector3<ZFloat>}
+
+    #[derive(Copy, Clone)]
+    pub struct VertexCoord{pub v: Vector3<ZFloat>}
+
+    #[derive(Copy, Clone)]
+    pub struct Normal{pub v: Vector3<ZFloat>}
+
+    #[derive(Copy, Clone)]
+    pub struct TextureCoord{pub v: Vector2<ZFloat>}
+
+    #[derive(Copy, Clone)]
+    pub struct ScreenPos{pub v: Vector2<ZInt>}
+
+    #[derive(Copy, Clone)]
+    pub struct Time{pub n: u64}
+
+    #[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Clone)]
+    pub struct MeshId{pub id: ZInt}
+}
+
+use types::{Color3, Color4};
+
+// pub const GREY_3: Color3 = Color3{r: 0.3, g: 0.3, b: 0.3};
+pub const BLACK_3: Color3 = Color3{r: 0.0, g: 0.0, b: 0.0};
+pub const WHITE: Color4 = Color4{r: 1.0, g: 1.0, b: 1.0, a: 1.0};
+pub const BLUE: Color4 = Color4{r: 0.0, g: 0.0, b: 1.0, a: 1.0};
+pub const RED: Color4 = Color4{r: 1.0, g: 0.0, b: 0.0, a: 1.0};
+pub const BLACK: Color4 = Color4{r: 0.0, g: 0.0, b: 0.0, a: 1.0};
+pub const GREY: Color4 = Color4{r: 0.7, g: 0.7, b: 0.7, a: 1.0};
+
+// use common::fs;
 use std::sync::mpsc::{channel, Receiver};
-use glutin::{WindowBuilder};
-use zgl::{Zgl, Time, Color3};
 use screen::{Screen, ScreenCommand, EventStatus};
 use context::{Context};
 use main_menu_screen::{MainMenuScreen};
 
-fn make_window() -> glutin::Window {
-    let gl_version = glutin::GlRequest::GlThenGles {
-        opengles_version: (2, 0),
-        opengl_version: (2, 0)
-    };
-    let window_builder = WindowBuilder::new()
-        .with_title("Zone of Control".to_owned())
-        .with_pixel_format(24, 8)
-        .with_gl(gl_version);
-    let window = window_builder.build()
-        .expect("Can`t create window");
-    unsafe {
-        window.make_current()
-            .expect("Can`t make window current");
-    };
-    window
+gfx_defines! {
+    vertex Vertex {
+        pos: [f32; 3] = "a_Pos",
+        uv: [f32; 2] = "a_Uv",
+    }
+
+    pipeline pipe {
+        mvp: gfx::Global<[[f32; 4]; 4]> = "u_ModelViewProj",
+        vbuf: gfx::VertexBuffer<Vertex> = (),
+        texture: gfx::TextureSampler<[f32; 4]> = "t_Tex",
+        out: gfx::BlendTarget<types::ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
+    }
 }
 
 pub struct Visualizer {
     screens: Vec<Box<Screen>>,
     popups: Vec<Box<Screen>>,
-    should_close: bool,
-    last_time: Time,
+    should_close: bool, // объединит с такой же фигней в контексте =\
+    last_time: u64,
     context: Context,
     rx: Receiver<ScreenCommand>,
 }
 
 impl Visualizer {
     pub fn new() -> Visualizer {
-        let window = make_window();
-        let zgl = Zgl::new(|s| window.get_proc_address(s) as *const _);
         let (tx, rx) = channel();
-        let mut context = Context::new(zgl, window, tx);
+        let mut context = Context::new(tx);
         let screens = vec![
             Box::new(MainMenuScreen::new(&mut context)) as Box<Screen>,
         ];
@@ -72,7 +143,7 @@ impl Visualizer {
             screens: screens,
             popups: Vec::new(),
             should_close: false,
-            last_time: Time{n: time::precise_time_ns()},
+            last_time: time::precise_time_ns(),
             context: context,
             rx: rx,
         }
@@ -86,16 +157,16 @@ impl Visualizer {
 
     fn draw(&mut self) {
         let dtime = self.update_time();
-        let bg_color = Color3{r: 0.8, g: 0.8, b: 0.8};
-        self.context.zgl.set_clear_color(&bg_color);
-        self.context.zgl.clear_screen();
+        self.context.clear_color = [0.8, 0.8, 0.8, 1.0];
+        self.context.encoder.clear(&self.context.main_color, self.context.clear_color);
         {
             let screen = self.screens.last_mut().unwrap();
-            screen.tick(&mut self.context, &dtime);
+            screen.tick(&mut self.context, dtime);
         }
         for popup in &mut self.popups {
-            popup.tick(&mut self.context, &dtime);
+            popup.tick(&mut self.context, dtime);
         }
+        self.context.encoder.flush(&mut self.context.device);
         self.context.window.swap_buffers()
             .expect("Can`t swap buffers");
     }
@@ -148,10 +219,10 @@ impl Visualizer {
         !self.should_close && !self.context.should_close()
     }
 
-    fn update_time(&mut self) -> Time {
+    fn update_time(&mut self) -> u64 {
         let time = time::precise_time_ns();
-        let dtime = Time{n: time - self.last_time.n};
-        self.last_time = Time{n: time};
+        let dtime = time - self.last_time;
+        self.last_time = time;
         dtime
     }
 }

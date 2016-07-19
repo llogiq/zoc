@@ -5,8 +5,8 @@ use std::io::{BufRead};
 use std::path::{Path};
 use std::str::{SplitWhitespace, Split, FromStr};
 use cgmath::{Vector3, Vector2};
-use common::types::{ZInt, ZFloat};
-use common::fs;
+use core::types::{ZInt, ZFloat};
+use core::fs;
 use types::{VertexCoord, TextureCoord, Normal};
 
 struct Line {

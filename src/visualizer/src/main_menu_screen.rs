@@ -1,20 +1,28 @@
 // See LICENSE file for copyright and license details.
 
 use std::default::{Default};
-use cgmath::{Vector2};
+use cgmath::{Vector2, Matrix4};
 use glutin::{self, Event, MouseButton, VirtualKeyCode};
 use glutin::ElementState::{Released};
-use zgl::{self, Time, ScreenPos};
+use gfx;
+use gfx::traits::{FactoryExt};
+use gfx_gl;
+// use zgl::{self, Time, ScreenPos};
 use screen::{Screen, ScreenCommand, EventStatus};
 use tactical_screen::{TacticalScreen};
 use core;
-use context::{Context};
+use context::{Context, load_texture};
 use gui::{ButtonManager, Button, ButtonId, is_tap};
+use types::{ScreenPos};
+use ::{Vertex, pipe};
+use core::fs;
 
 pub struct MainMenuScreen {
     button_start_hotseat_id: ButtonId,
     button_start_vs_ai_id: ButtonId,
     button_manager: ButtonManager,
+    slice: gfx::Slice<gfx_gl::Resources>,
+    data: pipe::Data<gfx_gl::Resources>,
 }
 
 impl MainMenuScreen {
@@ -36,10 +44,37 @@ impl MainMenuScreen {
             "start human vs ai",
             &button_pos,
         ));
+
+        let index_data: &[u16] = &[0,  1,  2,  1,  2,  3];
+        let vertex_data = &[
+            Vertex{pos: [-0.5, -0.5, 0.0], uv: [0.0, 1.0]},
+            Vertex{pos: [-0.5, 0.5, 0.0], uv: [0.0, 0.0]},
+            Vertex{pos: [0.5, -0.5, 0.0], uv: [1.0, 1.0]},
+            Vertex{pos: [0.5, 0.5, 0.0], uv: [1.0, 0.0]},
+        ];
+        let (vertex_buffer, slice) = context.factory.create_vertex_buffer_with_slice(vertex_data, index_data);
+        let test_texture = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO
+
+        // мне нужна своя дата или надо кнтекстную менять?
+        let mvp: Matrix4<f32> = Matrix4::new(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        );
+        let data = pipe::Data {
+            vbuf: vertex_buffer.clone(),
+            texture: (test_texture, context.sampler.clone()),
+            out: context.main_color.clone(),
+            mvp: mvp.into(),
+        };
+
         MainMenuScreen {
             button_manager: button_manager,
             button_start_hotseat_id: button_start_hotseat_id,
             button_start_vs_ai_id: button_start_vs_ai_id,
+            slice: slice,
+            data: data,
         }
     }
 
@@ -80,14 +115,27 @@ impl MainMenuScreen {
             {
                 context.add_command(ScreenCommand::PopScreen);
             },
+            // TODO: отладочная фигня, пока не заработают кнопки
+            glutin::VirtualKeyCode::Key1 => {
+                println!("MainMenuScreen::handle_event_key_press: Key1");
+                let core_options = Default::default();
+                let tactical_screen = Box::new(TacticalScreen::new(context, &core_options));
+                context.add_command(ScreenCommand::PushScreen(tactical_screen));
+            },
             _ => {},
         }
     }
 }
 
 impl Screen for MainMenuScreen {
-    fn tick(&mut self, context: &mut Context, _: &Time) {
-        context.set_basic_color(&zgl::BLACK);
+    fn tick(&mut self, context: &mut Context, _: u64) {
+        {
+            // TODO: временное нечто для проверки что что-то вообще работает
+            context.clear_color = [0.2, 0.9, 0.2, 1.0];
+            context.encoder.clear(&context.main_color, context.clear_color);
+            context.encoder.draw(&self.slice, &context.pso, &self.data); // рисуем тестовое что-то там
+        }
+        context.set_basic_color(&::BLACK);
         self.button_manager.draw(context);
     }
 

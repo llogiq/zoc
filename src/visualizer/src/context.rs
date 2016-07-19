@@ -1,40 +1,53 @@
 // See LICENSE file for copyright and license details.
 
 use std::sync::mpsc::{Sender};
-use std::path::{Path};
+// use std::path::{Path};
 use cgmath::{Vector2, Array};
-use glutin::{self, Event, MouseButton};
+use glutin::{self, Api, Event, MouseButton, GlRequest};
 use glutin::ElementState::{Pressed, Released};
-use zgl::{Zgl, ColorId, Color4, ScreenPos};
-use zgl::font_stash::{FontStash};
-use zgl::shader::{Shader};
-use common::types::{Size2, ZInt};
+use core::types::{Size2, ZInt};
 use screen::{ScreenCommand};
+use types::{ScreenPos, Color4, ColorFormat, SurfaceFormat};
+use ::{pipe};
 
-static VS_SRC: &'static str = "\
-    #version 100\n\
-    uniform mat4 mvp_mat;\n\
-    attribute vec3 position;\n\
-    attribute vec2 in_texture_coordinates;\n\
-    varying vec2 texture_coordinates;\n\
-    void main() {\n\
-        gl_Position = mvp_mat * vec4(position, 1.0);\n\
-        gl_PointSize = 2.0;\n\
-        texture_coordinates = in_texture_coordinates;\n\
-    }\n\
-";
+use image;
+use std::io::Cursor;
+use gfx::traits::FactoryExt;
+use gfx::handle::{RenderTargetView, DepthStencilView, ShaderResourceView};
+use gfx::{self, tex};
+use gfx_gl;
+use gfx_glutin;
+use core::fs;
 
-static FS_SRC: &'static str = "\
-    #version 100\n\
-    precision mediump float;\n\
-    uniform sampler2D basic_texture;\n\
-    uniform vec4 basic_color;
-    varying vec2 texture_coordinates;\n\
-    void main() {\n\
-        gl_FragColor = basic_color\n\
-            * texture2D(basic_texture, texture_coordinates);\n\
-    }\n\
-";
+// TODO: найти более подходящее место
+pub fn load_texture<R, F>(factory: &mut F, data: &[u8]) -> ShaderResourceView<R, [f32; 4]>
+    where R: gfx::Resources, F: gfx::Factory<R>
+{
+    let img = image::load(Cursor::new(data), image::PNG).unwrap().to_rgba();
+    let (width, height) = img.dimensions();
+    let kind = tex::Kind::D2(width as tex::Size, height as tex::Size, tex::AaMode::Single);
+    let (_, view) = factory.create_texture_const_u8::<ColorFormat>(kind, &[&img]).unwrap();
+    view
+}
+
+fn new_pso(
+    window: &glutin::Window,
+    factory: &mut gfx_gl::Factory,
+) -> gfx::PipelineState<gfx_gl::Resources, pipe::Meta> {
+    let shader_header = match window.get_api() {
+        Api::OpenGl => fs::load("shader/pre_gl.glsl").into_inner(),
+        Api::OpenGlEs | Api::WebGl => fs::load("shader/pre_gles.glsl").into_inner(),
+    };
+    let mut vertex_shader = shader_header.clone();
+    vertex_shader.extend(fs::load("shader/v.glsl").into_inner());
+    let mut fragment_shader = shader_header;
+    fragment_shader.extend(fs::load("shader/f.glsl").into_inner());
+    factory.create_pipeline_simple(
+        &vertex_shader,
+        &fragment_shader,
+        pipe::new(),
+    ).unwrap()
+}
 
 fn get_win_size(window: &glutin::Window) -> Size2 {
     let (w, h) = window.get_inner_size().expect("Can`t get window size");
@@ -50,34 +63,67 @@ pub struct MouseState {
 
 // TODO: make more fields private?
 pub struct Context {
-    pub window: glutin::Window,
     pub win_size: Size2,
-    pub zgl: Zgl,
-    pub font_stash: FontStash,
-    pub shader: Shader,
-    pub basic_color_id: ColorId,
+    // pub font_stash: FontStash,
+    // pub shader: Shader,
+    // pub basic_color_id: ColorId,
     mouse: MouseState,
     should_close: bool,
     commands_tx: Sender<ScreenCommand>,
+
+    // ------
+
+    // TODO: все публичное, да?
+    pub window: glutin::Window,
+    pub clear_color: [f32; 4],
+    pub device: gfx_gl::Device,
+    pub main_color: RenderTargetView<gfx_gl::Resources, (SurfaceFormat, gfx::format::Srgb)>,
+    pub main_depth: DepthStencilView<gfx_gl::Resources, (gfx::format::D24_S8, gfx::format::Unorm)>,
+    pub encoder: gfx::Encoder<gfx_gl::Resources, gfx_gl::CommandBuffer>,
+    pub pso: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
+    pub sampler: gfx::handle::Sampler<gfx_gl::Resources>,
+    pub factory: gfx_gl::Factory,
 }
 
 impl Context {
-    pub fn new(zgl: Zgl, window: glutin::Window, tx: Sender<ScreenCommand>) -> Context {
-        let shader = Shader::new(&zgl, VS_SRC, FS_SRC);
-        shader.activate(&zgl);
-        let basic_color_id = shader.get_uniform_color(&zgl, "basic_color");
+    pub fn new(tx: Sender<ScreenCommand>) -> Context {
+
+        let gl_version = GlRequest::GlThenGles {
+            opengles_version: (2, 0),
+            opengl_version: (2, 1),
+        };
+        let builder = glutin::WindowBuilder::new()
+            .with_title("Zone of Control".to_string())
+            .with_pixel_format(24, 8)
+            .with_gl(gl_version);
+        let (window, device, mut factory, main_color, main_depth)
+            = gfx_glutin::init(builder);
+        let encoder = factory.create_command_buffer().into();
+        let pso = new_pso(&window, &mut factory);
+        let sampler = factory.create_sampler_linear();
+        // shader.activate(&zgl);
+        // let basic_color_id = shader.get_uniform_color(&zgl, "basic_color");
         let win_size = get_win_size(&window);
-        let font_size = 40.0;
-        // TODO: read font name from config
-        let font_stash = FontStash::new(
-            &zgl, &Path::new("DroidSerif-Regular.ttf"), font_size);
+        // let font_size = 40.0;
+        // // TODO: read font name from config
+        // let font_stash = FontStash::new(
+        //     &zgl, &Path::new("DroidSerif-Regular.ttf"), font_size);
         Context {
-            shader: shader,
-            zgl: zgl,
-            window: window,
+            // shader: shader,
+            // window: window,
             win_size: win_size,
-            font_stash: font_stash,
-            basic_color_id: basic_color_id,
+            // font_stash: font_stash,
+            // basic_color_id: basic_color_id,
+
+            clear_color: [0.0, 0.0, 1.0, 1.0],
+            window: window,
+            device: device,
+            factory: factory,
+            main_color: main_color,
+            main_depth: main_depth,
+            encoder: encoder,
+            pso: pso,
+            sampler: sampler,
             should_close: false,
             commands_tx: tx,
             mouse: MouseState {
@@ -97,8 +143,8 @@ impl Context {
         &self.mouse
     }
 
-    pub fn set_basic_color(&self, color: &Color4) {
-        self.shader.set_uniform_color(&self.zgl, &self.basic_color_id, color);
+    pub fn set_basic_color(&self, _color: &Color4) {
+        // self.shader.set_uniform_color(&self.zgl, &self.basic_color_id, color);
     }
 
     pub fn add_command(&mut self, command: ScreenCommand) {
@@ -126,7 +172,7 @@ impl Context {
             },
             Event::Resized(w, h) => {
                 self.win_size = Size2{w: w as ZInt, h: h as ZInt};
-                self.zgl.set_viewport(&self.win_size);
+                // self.zgl.set_viewport(&self.win_size);
             },
             _ => {},
         }

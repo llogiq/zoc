@@ -1,41 +1,42 @@
 // See LICENSE file for copyright and license details.
 
 use std::collections::{HashMap, VecDeque};
-use common::types::{ZInt, ZFloat};
+use core::types::{ZInt, /*ZFloat*/};
 use core::{MapPos};
-use zgl::{Zgl};
-use zgl::mesh::{Mesh};
-use zgl::camera::Camera;
-use zgl::font_stash::{FontStash};
-use zgl::types::{Time};
+// use zgl::{Zgl};
+// use zgl::mesh::{Mesh};
+use camera::Camera;
+// use zgl::font_stash::{FontStash};
 use geom;
 use move_helper::{MoveHelper};
 use context::{Context};
 
 struct ShowTextCommand {
     pos: MapPos,
+
+    #[allow(dead_code)] // TODO
     text: String,
 }
 
 struct MapText {
     move_helper: MoveHelper,
-    mesh: Mesh,
+    // mesh: Mesh,
     pos: MapPos,
 }
 
 pub struct MapTextManager {
     commands: VecDeque<ShowTextCommand>,
     visible_labels_list: HashMap<ZInt, MapText>,
-    scale: ZFloat,
+    // scale: ZFloat,
     last_label_id: ZInt, // TODO: think about better way of deleting old labels
 }
 
 impl MapTextManager {
-    pub fn new(font_stash: &mut FontStash) -> Self {
+    pub fn new(/*font_stash: &mut FontStash*/) -> Self {
         MapTextManager {
             commands: VecDeque::new(),
             visible_labels_list: HashMap::new(),
-            scale: 0.5 / font_stash.get_size(),
+            // scale: 0.5 / font_stash.get_size(),
             last_label_id: 0,
         }
     }
@@ -58,7 +59,7 @@ impl MapTextManager {
         true
     }
 
-    pub fn do_commands(&mut self, zgl: &Zgl, font_stash: &mut FontStash) {
+    pub fn do_commands(&mut self, _context: &Context, /*font_stash: &mut FontStash*/) {
         let mut postponed_commands = Vec::new();
         while !self.commands.is_empty() {
             let command = self.commands.pop_front()
@@ -70,10 +71,10 @@ impl MapTextManager {
             let from = geom::map_pos_to_world_pos(&command.pos);
             let mut to = from.clone();
             to.v.z += 2.0;
-            let mesh = font_stash.get_mesh(zgl, &command.text, 1.0, true);
+            // let mesh = font_stash.get_mesh(zgl, &command.text, 1.0, true);
             self.visible_labels_list.insert(self.last_label_id, MapText {
                 pos: command.pos.clone(),
-                mesh: mesh,
+                // mesh: mesh,
                 move_helper: MoveHelper::new(&from, &to, 1.0),
             });
             self.last_label_id += 1;
@@ -96,14 +97,15 @@ impl MapTextManager {
     pub fn draw(
         &mut self,
         context: &mut Context,
-        camera: &Camera,
-        dtime: &Time,
+        _camera: &Camera,
+        dtime: u64,
     ) {
-        self.do_commands(&context.zgl, &mut context.font_stash);
+        self.do_commands(context/*, &mut context.font_stash*/);
         // TODO: I'm not sure that disabling depth test is correct solution
-        context.zgl.set_depth_test(false);
+        // context.zgl.set_depth_test(false);
         for (_, map_text) in self.visible_labels_list.iter_mut() {
-            let pos = map_text.move_helper.step(dtime);
+            let _pos = map_text.move_helper.step(dtime);
+            /*
             let m = camera.mat(&context.zgl);
             let m = context.zgl.tr(m, &pos.v);
             let m = context.zgl.scale(m, self.scale);
@@ -112,8 +114,9 @@ impl MapTextManager {
             context.shader.set_uniform_mat4f(
                 &context.zgl, context.shader.get_mvp_mat(), &m);
             map_text.mesh.draw(&context.zgl, &context.shader);
+            */
         }
-        context.zgl.set_depth_test(true);
+        // context.zgl.set_depth_test(true);
         self.delete_old();
     }
 }

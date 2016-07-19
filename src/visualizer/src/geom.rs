@@ -3,13 +3,13 @@
 use std::f32::consts::{PI};
 use num::{Float};
 use cgmath::{Vector3, Rad, Angle, rad};
-use common::types::{ZInt, ZFloat};
-use zgl::types::{VertexCoord, WorldPos};
+use core::types::{ZInt, ZFloat};
 use core::{ExactPos, MapPos, SlotId, geom};
+use types::{VertexCoord, WorldPos};
 
 pub use core::geom::{HEX_IN_RADIUS, HEX_EX_RADIUS};
 
-pub const MIN_LIFT_HEIGHT: ZFloat = 0.01;
+// pub const MIN_LIFT_HEIGHT: ZFloat = 0.01;
 
 pub fn map_pos_to_world_pos(p: &MapPos) -> WorldPos {
     let v = geom::map_pos_to_world_pos(&p).extend(0.0);
@@ -28,11 +28,13 @@ pub fn exact_pos_to_world_pos(p: &ExactPos) -> WorldPos {
     }
 }
 
+/*
 pub fn lift(v: Vector3<ZFloat>) -> Vector3<ZFloat> {
     let mut v = v;
     v.z += MIN_LIFT_HEIGHT;
     v
 }
+*/
 
 pub fn index_to_circle_vertex_rnd(count: ZInt, i: ZInt, pos: &MapPos) -> VertexCoord {
     let n = 2.0 * PI * (i as ZFloat) / (count as ZFloat);
@@ -78,7 +80,7 @@ mod tests {
     use num::{Float};
     use cgmath::{Vector3};
     use common::types::{ZFloat};
-    use zgl::types::{WorldPos};
+    use ::types::{WorldPos};
     use super::{get_rot_angle, index_to_circle_vertex};
 
     const EPS: ZFloat = 0.001;

@@ -4,8 +4,8 @@ use std::sync::mpsc::{Sender};
 use std::collections::{HashMap};
 use glutin::{self, Event, MouseButton, VirtualKeyCode};
 use glutin::ElementState::{Released};
-use common::types::{ZInt, ZFloat};
-use zgl::{self, Time, ScreenPos};
+use core::types::{ZInt, ZFloat, Size2};
+use types::{ScreenPos};
 use screen::{Screen, ScreenCommand, EventStatus};
 use context::{Context};
 use gui::{ButtonManager, Button, ButtonId, is_tap, basic_text_size};
@@ -85,8 +85,9 @@ impl ContextMenuPopup {
         let mut pos = pos.clone();
         // TODO: Simplify
         let baisc_text_size = basic_text_size(context);
-        let (_, test_text_size) = context.font_stash
-            .get_text_size(&context.zgl, "X");
+        // let (_, test_text_size) = context.font_stash
+        //     .get_text_size(&context.zgl, "X");
+        let test_text_size = Size2{w: 10, h: 10};
         pos.v.y -= test_text_size.h * baisc_text_size as ZInt / 2;
         pos.v.x -= test_text_size.w * baisc_text_size as ZInt / 2;
         let vstep = (test_text_size.h as ZFloat * baisc_text_size * 1.2) as ZInt;
@@ -227,8 +228,8 @@ impl ContextMenuPopup {
 }
 
 impl Screen for ContextMenuPopup {
-    fn tick(&mut self, context: &mut Context, _: &Time) {
-        context.set_basic_color(&zgl::BLACK);
+    fn tick(&mut self, context: &mut Context, _: u64) {
+        context.set_basic_color(&::BLACK);
         self.button_manager.draw(context);
     }
 
