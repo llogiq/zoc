@@ -95,6 +95,7 @@ fn get_max_camera_pos(map_size: &Size2) -> WorldPos {
     WorldPos{v: Vector3{x: -pos.v.x, y: -pos.v.y, z: 0.0}}
 }
 
+/*
 struct Mesh {
     // ...
     slice: gfx::Slice<gfx_gl::Resources>,
@@ -114,7 +115,7 @@ impl Mesh {
 }
 
 // TODO: `cond: F` -> `enum NameMe{Visible, Fogged}`
-fn gen_tiles<F>(context: &Context, state: &PartialState, /*tex: &Texture,*/ cond: F) -> Mesh
+fn gen_tiles<F>(context: &Context, state: &PartialState, tex: &Texture, cond: F) -> Mesh
     where F: Fn(bool) -> bool
 {
     let mut vertex_data = Vec::new();
@@ -144,6 +145,7 @@ fn gen_tiles<F>(context: &Context, state: &PartialState, /*tex: &Texture,*/ cond
     // mesh.add_texture(context, tex.clone(), &tex_data);
     mesh
 }
+*/
 
 /*
 fn generate_visible_tiles_mesh(context: &Context, state: &PartialState, tex: &Texture) -> Mesh {
