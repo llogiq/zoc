@@ -55,10 +55,12 @@ pub fn index_to_hex_vertex(i: ZInt) -> VertexCoord {
     index_to_circle_vertex(6, i)
 }
 
+/*
 pub fn index_to_hex_vertex_s(scale: ZFloat, i: ZInt) -> VertexCoord {
     let v = index_to_hex_vertex(i).v * scale;
     VertexCoord{v: v}
 }
+*/
 
 // TODO: ZFloat -> WorldDistance
 pub fn dist(a: &WorldPos, b: &WorldPos) -> ZFloat {
