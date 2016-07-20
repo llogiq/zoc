@@ -52,7 +52,7 @@ impl Camera {
         let x_angle_m = Matrix4::from(Matrix3::from_angle_x(-self.x_angle));
         let z_angle_m = Matrix4::from(Matrix3::from_angle_z(-self.z_angle));
         println!("{:?}", self.pos.v);
-        let tr_m = Matrix4::from_translation(-self.pos.v);
+        let tr_m = Matrix4::from_translation(self.pos.v);
         perspective_mat * zoom_m * x_angle_m * z_angle_m * tr_m
     }
 

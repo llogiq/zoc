@@ -82,11 +82,12 @@ use geom;
 use screen::{Screen, ScreenCommand, EventStatus};
 use context_menu_popup::{self, ContextMenuPopup};
 // use end_turn_screen::{EndTurnScreen};
-use types::{ScreenPos, WorldPos, MeshId, VertexCoord, TextureCoord};
+use types::{ScreenPos, WorldPos, MeshId, /*VertexCoord, TextureCoord*/};
 
 fn get_initial_camera_pos(map_size: &Size2) -> WorldPos {
-    let pos = get_max_camera_pos(map_size);
-    WorldPos{v: Vector3{x: pos.v.x / 2.0, y: pos.v.y / 2.0, z: 0.0}}
+    let _pos = get_max_camera_pos(map_size);
+    // WorldPos{v: Vector3{x: pos.v.x / 2.0, y: pos.v.y / 2.0, z: 0.0}}
+    WorldPos{v: Vector3{x: 0.0, y: 0.0, z: 0.0}} // TODO
 }
 
 fn get_max_camera_pos(map_size: &Size2) -> WorldPos {
@@ -95,16 +96,13 @@ fn get_max_camera_pos(map_size: &Size2) -> WorldPos {
     WorldPos{v: Vector3{x: -pos.v.x, y: -pos.v.y, z: 0.0}}
 }
 
-/*
 struct Mesh {
-    // ...
     slice: gfx::Slice<gfx_gl::Resources>,
-    // data: pipe::Data<gfx_gl::Resources>,
     vertex_buffer: gfx::handle::Buffer<gfx_gl::Resources, Vertex>,
 }
 
 impl Mesh {
-    fn new(context: &Context, vertices: &[Vertex], indices: &[u16]) -> Mesh {
+    fn new(context: &mut Context, vertices: &[Vertex], indices: &[u16]) -> Mesh {
         let (v, s) = context.factory.create_vertex_buffer_with_slice(vertices, indices);
         Mesh {
             slice: s,
@@ -115,47 +113,46 @@ impl Mesh {
 }
 
 // TODO: `cond: F` -> `enum NameMe{Visible, Fogged}`
-fn gen_tiles<F>(context: &Context, state: &PartialState, tex: &Texture, cond: F) -> Mesh
-    where F: Fn(bool) -> bool
-{
-    let mut vertex_data = Vec::new();
+fn gen_tiles<F: Fn(bool) -> bool>(
+    context: &mut Context,
+    state: &PartialState,
+    // tex: &Texture,
+    cond: F,
+) -> Mesh {
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    let mut i = 0;
     for tile_pos in state.map().get_iter() {
         if !cond(state.is_tile_visible(&tile_pos)) {
             continue;
         }
         let pos = geom::map_pos_to_world_pos(&tile_pos);
-        vertex_data.push(Vertex {
-            // v: pos.v + vertex.v
-            pos: [0.8, 0.8, 0.0],
-            uv: [1.0, 0.0],
-        });
         for dir in dirs() {
-            // let num = dir.to_int();
-            // let vertex = geom::index_to_hex_vertex(num);
-            // let next_vertex = geom::index_to_hex_vertex(num + 1);
-            // vertex_data.push(VertexCoord{v: pos.v + vertex.v});
-            // vertex_data.push(VertexCoord{v: pos.v + next_vertex.v});
-            // vertex_data.push(VertexCoord{v: pos.v});
-            // tex_data.push(TextureCoord{v: Vector2{x: 0.0, y: 0.0}});
-            // tex_data.push(TextureCoord{v: Vector2{x: 1.0, y: 0.0}});
-            // tex_data.push(TextureCoord{v: Vector2{x: 0.5, y: 0.5}});
+            let dir_index = dir.to_int();
+            let vertex = geom::index_to_hex_vertex(dir_index);
+            vertices.push(Vertex {
+                pos: (pos.v + vertex.v).into(),
+                uv: ((vertex.v.truncate() * 0.3) + Vector2{x: 0.5, y: 0.5}).into(),
+            });
         }
+        indices.extend(&[i + 0, i + 1, i + 2, i + 0, i + 2, i + 3, i + 0, i + 3, i + 5, i + 3, i + 4, i + 5]);
+        i += 4 * 3;
     }
-    let mut mesh = Mesh::new(context, &vertex_data);
-    // mesh.add_texture(context, tex.clone(), &tex_data);
+    let /*mut*/ mesh = Mesh::new(context, &vertices, &indices);
+    // let texture = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO
+    // mesh.add_texture(context, texture);
     mesh
 }
-*/
+
+fn generate_visible_tiles_mesh(context: &mut Context, state: &PartialState /*, tex: &Texture*/) -> Mesh {
+    gen_tiles(context, state, /*tex,*/ |vis| vis)
+}
+
+fn generate_fogged_tiles_mesh(context: &mut Context, state: &PartialState /*, tex: &Texture*/) -> Mesh {
+    gen_tiles(context, state, /*tex,*/ |vis| !vis)
+}
 
 /*
-fn generate_visible_tiles_mesh(context: &Context, state: &PartialState, tex: &Texture) -> Mesh {
-    gen_tiles(context, state, tex, |vis| vis)
-}
-
-fn generate_fogged_tiles_mesh(context: &Context, state: &PartialState, tex: &Texture) -> Mesh {
-    gen_tiles(context, state, tex, |vis| !vis)
-}
-
 fn build_walkable_mesh(
     zgl: &Zgl,
     pf: &Pathfinder,
@@ -383,8 +380,8 @@ pub struct TacticalScreen {
     // // TODO: move to 'meshes'
     // walkable_mesh: Option<Mesh>,
     // targets_mesh: Option<Mesh>,
-    // visible_map_mesh: Mesh,
-    // fow_map_mesh: Mesh,
+    visible_map_mesh: Mesh,
+    fow_map_mesh: Mesh,
     // floor_tex: Texture,
     tx: Sender<context_menu_popup::Command>,
     rx: Receiver<context_menu_popup::Command>,
@@ -399,12 +396,12 @@ impl TacticalScreen {
         let map_size = core.map_size().clone();
         let player_info = PlayerInfoManager::new(&map_size, core_options);
         // let floor_tex = Texture::new(&context.zgl, "floor.png"); // TODO: !!!
-        /*
-        let mut meshes = Vec::new();
+        // let mut meshes = Vec::new();
         let visible_map_mesh = generate_visible_tiles_mesh(
-            &context.zgl, &player_info.get(core.player_id()).game_state, &floor_tex);
+            context, &player_info.get(core.player_id()).game_state, /*&floor_tex*/);
         let fow_map_mesh = generate_fogged_tiles_mesh(
-            &context.zgl, &player_info.get(core.player_id()).game_state, &floor_tex);
+            context, &player_info.get(core.player_id()).game_state, /*&floor_tex*/);
+        /*
         let big_building_mesh_w_id = add_mesh(
             &mut meshes, load_object_mesh(&context.zgl, "big_building_wire"));
         let building_mesh_w_id = add_mesh(
@@ -425,7 +422,7 @@ impl TacticalScreen {
             = get_unit_type_visual_info(core.db(), context);
         let mut camera = Camera::new(&context.win_size);
         camera.set_max_pos(get_max_camera_pos(&map_size));
-        // camera.set_pos(get_initial_camera_pos(&map_size)); // TODO
+        camera.set_pos(get_initial_camera_pos(&map_size)); // TODO
         /*
         let font_size = 40.0;
         let mut font_stash = FontStash::new(
@@ -515,8 +512,8 @@ impl TacticalScreen {
             // walkable_mesh: None,
             // targets_mesh: None,
             map_text_manager: map_text_manager,
-            // visible_map_mesh: visible_map_mesh,
-            // fow_map_mesh: fow_map_mesh,
+            visible_map_mesh: visible_map_mesh,
+            fow_map_mesh: fow_map_mesh,
             // floor_tex: floor_tex,
             tx: tx,
             rx: rx,
@@ -968,6 +965,14 @@ impl TacticalScreen {
         // self.fow_map_mesh.draw(&context.zgl, &context.shader);
         context.set_basic_color(&::WHITE);
         // self.visible_map_mesh.draw(&context.zgl, &context.shader);
+        {
+            // self.data.vbuf = self.visible_map_mesh.vertex_buffer.clone();
+            // context.encoder.draw(&self.visible_map_mesh.slice, &context.pso, &self.data);
+        }
+        {
+            self.data.vbuf = self.fow_map_mesh.vertex_buffer.clone();
+            context.encoder.draw(&self.fow_map_mesh.slice, &context.pso, &self.data);
+        }
     }
 
     fn draw_scene(&mut self, context: &mut Context, dtime: u64) {
@@ -1132,7 +1137,7 @@ impl TacticalScreen {
             .is_finished()
     }
 
-    fn start_event_visualization(&mut self, context: &Context, event: CoreEvent) {
+    fn start_event_visualization(&mut self, context: &mut Context, event: CoreEvent) {
         let vis = self.make_event_visualizer(&event);
         self.event = Some(event);
         self.event_visualizer = Some(vis);
@@ -1167,7 +1172,7 @@ impl TacticalScreen {
         }
     }
 
-    fn end_event_visualization(&mut self, context: &Context) {
+    fn end_event_visualization(&mut self, context: &mut Context) {
         self.attacker_died_from_reaction_fire();
         {
             let i = self.player_info.get_mut(self.core.player_id());
@@ -1175,10 +1180,8 @@ impl TacticalScreen {
             let state = &mut i.game_state;
             self.event_visualizer.as_mut().unwrap().end(scene, state);
             state.apply_event(self.core.db(), self.event.as_ref().unwrap());
-            // self.visible_map_mesh = generate_visible_tiles_mesh(
-            //     &context.zgl, state, &self.floor_tex);
-            // self.fow_map_mesh = generate_fogged_tiles_mesh(
-            //     &context.zgl, state, &self.floor_tex);
+            self.visible_map_mesh = generate_visible_tiles_mesh(context, state);
+            self.fow_map_mesh = generate_fogged_tiles_mesh(context, state); // , &self.floor_tex);
         }
         self.event_visualizer = None;
         self.event = None;
@@ -1189,7 +1192,7 @@ impl TacticalScreen {
         }
     }
 
-    fn logic(&mut self, context: &Context) {
+    fn logic(&mut self, context: &mut Context) {
         if self.event_visualizer.is_none() {
             if let Some(event) = self.core.get_event() {
                 self.start_event_visualization(context, event);
