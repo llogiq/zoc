@@ -132,11 +132,16 @@ fn gen_tiles<F: Fn(bool) -> bool>(
             let vertex = geom::index_to_hex_vertex(dir_index);
             vertices.push(Vertex {
                 pos: (pos.v + vertex.v).into(),
-                uv: ((vertex.v.truncate() * 0.3) + Vector2{x: 0.5, y: 0.5}).into(),
+                uv: ((vertex.v.truncate() * 0.5) + Vector2{x: 0.5, y: 0.5}).into(),
             });
         }
-        indices.extend(&[i + 0, i + 1, i + 2, i + 0, i + 2, i + 3, i + 0, i + 3, i + 5, i + 3, i + 4, i + 5]);
-        i += 4 * 3;
+        indices.extend(&[
+            i + 0, i + 1, i + 2,
+            i + 0, i + 2, i + 3,
+            i + 0, i + 3, i + 5,
+            i + 3, i + 4, i + 5,
+        ]);
+        i += 6;
     }
     let /*mut*/ mesh = Mesh::new(context, &vertices, &indices);
     // let texture = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO
@@ -961,14 +966,12 @@ impl TacticalScreen {
         //     context.shader.get_mvp_mat(),
         //     &self.camera.mat(&context.zgl),
         // );
-        context.set_basic_color(&::GREY);
-        // self.fow_map_mesh.draw(&context.zgl, &context.shader);
         context.set_basic_color(&::WHITE);
-        // self.visible_map_mesh.draw(&context.zgl, &context.shader);
         {
-            // self.data.vbuf = self.visible_map_mesh.vertex_buffer.clone();
-            // context.encoder.draw(&self.visible_map_mesh.slice, &context.pso, &self.data);
+            self.data.vbuf = self.visible_map_mesh.vertex_buffer.clone();
+            context.encoder.draw(&self.visible_map_mesh.slice, &context.pso, &self.data);
         }
+        context.set_basic_color(&::GREY);
         {
             self.data.vbuf = self.fow_map_mesh.vertex_buffer.clone();
             context.encoder.draw(&self.fow_map_mesh.slice, &context.pso, &self.data);
