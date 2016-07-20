@@ -21,7 +21,6 @@ collision = "*"
 cgmath = "*"
 time = "*"
 rand = "*"
-num = "*"
 
 [dependencies.image]
 version = "*"

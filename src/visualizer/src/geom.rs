@@ -1,7 +1,6 @@
 // See LICENSE file for copyright and license details.
 
 use std::f32::consts::{PI};
-use num::{Float};
 use cgmath::{Vector3, Rad, Angle, rad};
 use core::types::{ZInt, ZFloat};
 use core::{ExactPos, MapPos, SlotId, geom};
@@ -72,14 +71,13 @@ pub fn dist(a: &WorldPos, b: &WorldPos) -> ZFloat {
 
 pub fn get_rot_angle(a: &WorldPos, b: &WorldPos) -> Rad<ZFloat> {
     let diff = b.v - a.v;
-    let angle = Float::atan2(diff.x, diff.y);
+    let angle = diff.x.atan2(diff.y);
     rad(-angle).normalize()
 }
 
 #[cfg(test)]
 mod tests {
     use std::f32::consts::{PI};
-    use num::{Float};
     use cgmath::{Vector3};
     use core::types::{ZFloat};
     use ::types::{WorldPos};

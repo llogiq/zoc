@@ -14,4 +14,3 @@ android_glue = "*"
 [dependencies]
 cgmath = "*"
 rand = "*"
-num = "*"

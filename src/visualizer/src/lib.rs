@@ -5,7 +5,6 @@ extern crate gfx;
 
 extern crate gfx_window_glutin as gfx_glutin;
 extern crate gfx_device_gl as gfx_gl;
-extern crate num;
 extern crate rand;
 extern crate time;
 extern crate cgmath;
