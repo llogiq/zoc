@@ -1,17 +1,16 @@
 // See LICENSE file for copyright and license details.
 
-use cgmath::{Vector2, rad};
-use core::{UnitId};
+use cgmath::{/*Vector2,*/ rad};
+use core::{fs, UnitId};
 use core::partial_state::{PartialState};
 use core::game_state::{GameState};
 use core::dir::{dirs};
-use zgl::misc::{add_quad_to_vec};
-use zgl::mesh::{Mesh, MeshId};
-use zgl::texture::Texture;
-use zgl::types::{TextureCoord, WorldPos};
-use zgl::{Zgl};
 use geom;
 use scene::{Scene, SceneNode, NodeId};
+use context::{Context, load_texture};
+use types::{WorldPos, MeshId};
+use tactical_screen::{Mesh};
+use ::{Vertex};
 
 pub struct SelectionManager {
     unit_id: Option<UnitId>,
@@ -65,10 +64,11 @@ impl SelectionManager {
     }
 }
 
-pub fn get_selection_mesh(zgl: &Zgl) -> Mesh {
-    let tex = Texture::new(zgl, "shell.png");
-    let mut vertex_data = Vec::new();
-    let mut tex_data = Vec::new();
+pub fn get_selection_mesh(context: &mut Context) -> Mesh {
+    let texture_data = fs::load("shell.png").into_inner();
+    let texture = load_texture(&mut context.factory, &texture_data);
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
     let scale_1 = 0.6;
     let scale_2 = scale_1 + 0.05;
     for dir in dirs() {
@@ -76,24 +76,13 @@ pub fn get_selection_mesh(zgl: &Zgl) -> Mesh {
         let vertex_1_2 = geom::index_to_hex_vertex_s(scale_2, dir.to_int());
         let vertex_2_1 = geom::index_to_hex_vertex_s(scale_1, dir.to_int() + 1);
         let vertex_2_2 = geom::index_to_hex_vertex_s(scale_2, dir.to_int() + 1);
-        add_quad_to_vec(
-            &mut vertex_data,
-            vertex_2_1,
-            vertex_2_2,
-            vertex_1_2,
-            vertex_1_1,
-        );
-        add_quad_to_vec(
-            &mut tex_data,
-            TextureCoord{v: Vector2{x: 0.0, y: 0.0}},
-            TextureCoord{v: Vector2{x: 0.0, y: 1.0}},
-            TextureCoord{v: Vector2{x: 1.0, y: 1.0}},
-            TextureCoord{v: Vector2{x: 1.0, y: 0.0}},
-        );
+        vertices.push(Vertex{pos: vertex_1_1.v.into(), uv: [0.0, 0.0]});
+        vertices.push(Vertex{pos: vertex_1_2.v.into(), uv: [0.0, 1.0]});
+        vertices.push(Vertex{pos: vertex_2_1.v.into(), uv: [1.0, 0.0]});
+        vertices.push(Vertex{pos: vertex_2_2.v.into(), uv: [1.0, 1.0]});
+        indices.extend(&[1, 2, 3, 1, 3, 4]);
     }
-    let mut mesh = Mesh::new(zgl, &vertex_data);
-    mesh.add_texture(zgl, tex, &tex_data);
-    mesh
+    Mesh::new(context, &vertices, &indices, texture)
 }
 
 // vim: set tabstop=4 shiftwidth=4 softtabstop=4 expandtab:

@@ -8,7 +8,7 @@ use types::{VertexCoord, WorldPos};
 
 pub use core::geom::{HEX_IN_RADIUS, HEX_EX_RADIUS};
 
-// pub const MIN_LIFT_HEIGHT: ZFloat = 0.01;
+pub const MIN_LIFT_HEIGHT: ZFloat = 0.01;
 
 pub fn map_pos_to_world_pos(p: &MapPos) -> WorldPos {
     let v = geom::map_pos_to_world_pos(&p).extend(0.0);
@@ -27,13 +27,11 @@ pub fn exact_pos_to_world_pos(p: &ExactPos) -> WorldPos {
     }
 }
 
-/*
 pub fn lift(v: Vector3<ZFloat>) -> Vector3<ZFloat> {
     let mut v = v;
     v.z += MIN_LIFT_HEIGHT;
     v
 }
-*/
 
 pub fn index_to_circle_vertex_rnd(count: ZInt, i: ZInt, pos: &MapPos) -> VertexCoord {
     let n = 2.0 * PI * (i as ZFloat) / (count as ZFloat);
@@ -54,12 +52,10 @@ pub fn index_to_hex_vertex(i: ZInt) -> VertexCoord {
     index_to_circle_vertex(6, i)
 }
 
-/*
 pub fn index_to_hex_vertex_s(scale: ZFloat, i: ZInt) -> VertexCoord {
     let v = index_to_hex_vertex(i).v * scale;
     VertexCoord{v: v}
 }
-*/
 
 // TODO: ZFloat -> WorldDistance
 pub fn dist(a: &WorldPos, b: &WorldPos) -> ZFloat {

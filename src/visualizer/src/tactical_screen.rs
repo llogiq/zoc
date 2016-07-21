@@ -73,7 +73,7 @@ use unit_type_visual_info::{
     UnitTypeVisualInfo,
     UnitTypeVisualInfoManager,
 };
-// use selection::{SelectionManager, get_selection_mesh};
+use selection::{SelectionManager, get_selection_mesh};
 use map_text::{MapTextManager};
 use context::{Context, load_texture};
 use ::{Vertex, pipe};
@@ -95,16 +95,16 @@ fn get_max_camera_pos(map_size: &Size2) -> WorldPos {
     WorldPos{v: Vector3{x: -pos.v.x, y: -pos.v.y, z: 0.0}}
 }
 
-type Texture = gfx::handle::ShaderResourceView<gfx_gl::Resources, [f32; 4]>;
+pub type Texture = gfx::handle::ShaderResourceView<gfx_gl::Resources, [f32; 4]>;
 
-struct Mesh {
+pub struct Mesh {
     slice: gfx::Slice<gfx_gl::Resources>,
     vertex_buffer: gfx::handle::Buffer<gfx_gl::Resources, Vertex>,
     texture: Texture,
 }
 
 impl Mesh {
-    fn new(context: &mut Context, vertices: &[Vertex], indices: &[u16], tex: Texture) -> Mesh {
+    pub fn new(context: &mut Context, vertices: &[Vertex], indices: &[u16], tex: Texture) -> Mesh {
         let (v, s) = context.factory.create_vertex_buffer_with_slice(vertices, indices);
         Mesh {
             slice: s,
@@ -288,12 +288,10 @@ struct MeshIdManager {
     marker_2_mesh_id: MeshId,
 }
 
-/*
 fn add_mesh(meshes: &mut Vec<Mesh>, mesh: Mesh) -> MeshId {
     meshes.push(mesh);
     MeshId{id: (meshes.len() as ZInt) - 1}
 }
-*/
 
 fn get_unit_type_visual_info(
     db: &Db,
@@ -377,10 +375,10 @@ pub struct TacticalScreen {
     event: Option<CoreEvent>,
     event_visualizer: Option<Box<EventVisualizer>>,
     mesh_ids: MeshIdManager,
-    // meshes: Vec<Mesh>,
+    meshes: Vec<Mesh>,
     unit_type_visual_info: UnitTypeVisualInfoManager,
     selected_unit_id: Option<UnitId>,
-    // selection_manager: SelectionManager,
+    selection_manager: SelectionManager,
     // // TODO: move to 'meshes'
     // walkable_mesh: Option<Mesh>,
     // targets_mesh: Option<Mesh>,
@@ -404,7 +402,7 @@ impl TacticalScreen {
         let floor_tex = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO: floor.png
         let floor_tex_2 = load_texture(&mut context.factory, &fs::load("truck.png").into_inner()); // TODO: floor.png
         // let floor_tex = Texture::new(&context.zgl, "floor.png"); // TODO: !!!
-        // let mut meshes = Vec::new();
+        let mut meshes = Vec::new();
         let visible_map_mesh = generate_visible_tiles_mesh(
             context, &player_info.get(core.player_id()).game_state, floor_tex.clone());
         let fow_map_mesh = generate_fogged_tiles_mesh(
@@ -416,8 +414,10 @@ impl TacticalScreen {
             &mut meshes, load_object_mesh(&context.zgl, "building_wire"));
         let trees_mesh_id = add_mesh(
             &mut meshes, load_object_mesh(&context.zgl, "trees"));
+        */
         let selection_marker_mesh_id = add_mesh(
-            &mut meshes, get_selection_mesh(&context.zgl));
+            &mut meshes, get_selection_mesh(context));
+        /*
         let shell_mesh_id = add_mesh(
             &mut meshes, get_shell_mesh(&context.zgl));
         let marker_1_mesh_id = add_mesh(
@@ -506,10 +506,10 @@ impl TacticalScreen {
             event: None,
             event_visualizer: None,
             mesh_ids: mesh_ids,
-            // meshes: meshes,
+            meshes: meshes,
             unit_type_visual_info: unit_type_visual_info,
             selected_unit_id: None,
-            // selection_manager: SelectionManager::new(selection_marker_mesh_id),
+            selection_manager: SelectionManager::new(selection_marker_mesh_id),
             // walkable_mesh: None,
             // targets_mesh: None,
             map_text_manager: map_text_manager,
@@ -604,9 +604,9 @@ impl TacticalScreen {
 
     fn deselect_unit(&mut self) {
         self.selected_unit_id = None;
-        let _i = self.player_info.get_mut(self.core.player_id());
-        /*
+        let i = self.player_info.get_mut(self.core.player_id());
         self.selection_manager.deselect(&mut i.scene);
+        /*
         self.walkable_mesh = None;
         self.targets_mesh = None;
         */
@@ -760,9 +760,9 @@ impl TacticalScreen {
         //     &context.zgl, pf, state.map(), &state.unit(unit_id).move_points));
         // self.targets_mesh = Some(build_targets_mesh(
         //     self.core.db(), &context.zgl, state, unit_id));
-        // let scene = &mut i.scene;
-        // self.selection_manager.create_selection_marker(
-        //     state, scene, unit_id);
+        let scene = &mut i.scene;
+        self.selection_manager.create_selection_marker(
+            state, scene, unit_id);
     }
 
     fn move_unit(&mut self, pos: &ExactPos, move_mode: &MoveMode) {
@@ -1147,8 +1147,8 @@ impl TacticalScreen {
         if self.is_event_visualization_finished() {
             self.end_event_visualization(context);
         } else {
-            let _i = &mut self.player_info.get_mut(self.core.player_id());
-            // self.selection_manager.deselect(&mut i.scene);
+            let i = &mut self.player_info.get_mut(self.core.player_id());
+            self.selection_manager.deselect(&mut i.scene);
             // self.walkable_mesh = None;
             // self.targets_mesh = None;
         }

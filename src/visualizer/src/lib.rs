@@ -18,7 +18,7 @@ mod obj;
 mod scene;
 mod event_visualizer;
 mod unit_type_visual_info;
-// mod selection;
+mod selection;
 mod map_text;
 mod move_helper;
 mod camera;
