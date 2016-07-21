@@ -1,7 +1,7 @@
 // See LICENSE file for copyright and license details.
 
 use std::default::{Default};
-use cgmath::{Vector2, Matrix4};
+use cgmath::{Vector2, Matrix4, SquareMatrix};
 use glutin::{self, Event, MouseButton, VirtualKeyCode};
 use glutin::ElementState::{Released};
 use gfx;
@@ -56,12 +56,7 @@ impl MainMenuScreen {
         let test_texture = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO
 
         // мне нужна своя дата или надо кнтекстную менять?
-        let mvp: Matrix4<f32> = Matrix4::new(
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 0.0, 1.0,
-        );
+        let mvp = Matrix4::from_value(1.0);
         let data = pipe::Data {
             vbuf: vertex_buffer.clone(),
             texture: (test_texture, context.sampler.clone()),
