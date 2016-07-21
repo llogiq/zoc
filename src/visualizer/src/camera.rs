@@ -27,9 +27,8 @@ fn get_projection_mat(win_size: &Size2) -> Matrix4<ZFloat> {
 impl Camera {
     pub fn new(win_size: &Size2) -> Camera {
         Camera {
-            // x_angle: rad(PI / 4.0),
-            x_angle: rad(0.0),
-            z_angle: rad(0.0),
+            x_angle: rad(PI / 4.0),
+            z_angle: rad(PI / 4.0),
             pos: WorldPos{v: Vector3::from_value(0.0)},
             max_pos: WorldPos{v: Vector3::from_value(0.0)},
             zoom: 15.0,
@@ -46,13 +45,11 @@ impl Camera {
         // let m = zgl.rot_z(m, &-self.z_angle);
         // let m = zgl.tr(m, &self.pos.v);
         // m
-        let aspect = 1.0; // TODO
-        let perspective_mat = perspective(Rad::new(PI / 4.0), aspect, 0.1, 100.0);
         let zoom_m = Matrix4::from_translation(Vector3{x: 0.0, y: 0.0, z: -self.zoom});
         let x_angle_m = Matrix4::from(Matrix3::from_angle_x(-self.x_angle));
         let z_angle_m = Matrix4::from(Matrix3::from_angle_z(-self.z_angle));
         let tr_m = Matrix4::from_translation(self.pos.v);
-        perspective_mat * zoom_m * x_angle_m * z_angle_m * tr_m
+        self.projection_mat * zoom_m * x_angle_m * z_angle_m * tr_m
     }
 
     pub fn add_horizontal_angle(&mut self, angle: Rad<ZFloat>) {

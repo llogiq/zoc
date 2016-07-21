@@ -85,9 +85,8 @@ use context_menu_popup::{self, ContextMenuPopup};
 use types::{ScreenPos, WorldPos, MeshId, /*VertexCoord, TextureCoord*/};
 
 fn get_initial_camera_pos(map_size: &Size2) -> WorldPos {
-    let _pos = get_max_camera_pos(map_size);
-    // WorldPos{v: Vector3{x: pos.v.x / 2.0, y: pos.v.y / 2.0, z: 0.0}}
-    WorldPos{v: Vector3{x: 0.0, y: 0.0, z: 0.0}} // TODO
+    let pos = get_max_camera_pos(map_size);
+    WorldPos{v: Vector3{x: pos.v.x / 2.0, y: pos.v.y / 2.0, z: 0.0}}
 }
 
 fn get_max_camera_pos(map_size: &Size2) -> WorldPos {
