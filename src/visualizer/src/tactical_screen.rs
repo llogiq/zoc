@@ -849,7 +849,6 @@ impl TacticalScreen {
     }
 
     fn handle_event_key_press(&mut self, context: &mut Context, key: VirtualKeyCode) {
-        println!("TacticalScreen::handle_event_key_press");
         let camera_move_speed_on_keypress = geom::HEX_EX_RADIUS;
         let s = camera_move_speed_on_keypress;
         match key {
@@ -1281,7 +1280,6 @@ impl TacticalScreen {
 
 impl Screen for TacticalScreen {
     fn tick(&mut self, context: &mut Context, dtime: u64) {
-        // println!("TacticalScreen::tick");
         self.logic(context);
         self.draw(context, dtime);
         self.handle_context_menu_popup_commands(context);
