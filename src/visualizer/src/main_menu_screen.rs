@@ -56,7 +56,7 @@ impl MainMenuScreen {
         let test_texture = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO
 
         // мне нужна своя дата или надо кнтекстную менять?
-        let mvp = Matrix4::from_value(1.0);
+        let mvp = Matrix4::identity();
         let data = pipe::Data {
             vbuf: vertex_buffer.clone(),
             texture: (test_texture, context.sampler.clone()),
