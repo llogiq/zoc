@@ -20,8 +20,7 @@ fn get_projection_mat(win_size: &Size2) -> Matrix4<ZFloat> {
     let ratio = win_size.w as ZFloat / win_size.h as ZFloat;
     let display_range_min = 0.1;
     let display_range_max = 100.0;
-    perspective(
-        fov, ratio, display_range_min, display_range_max)
+    perspective(fov, ratio, display_range_min, display_range_max)
 }
 
 impl Camera {
@@ -37,14 +36,6 @@ impl Camera {
     }
 
     pub fn mat(&self) -> Matrix4<ZFloat> {
-        // TODO
-        // let m = self.projection_mat;
-        // используй уже нормальный cgmath (подсмотри в нергале)
-        // let m = zgl.tr(m, &Vector3{x: 0.0, y: 0.0, z: -self.zoom});
-        // let m = zgl.rot_x(m, &-self.x_angle);
-        // let m = zgl.rot_z(m, &-self.z_angle);
-        // let m = zgl.tr(m, &self.pos.v);
-        // m
         let zoom_m = Matrix4::from_translation(Vector3{x: 0.0, y: 0.0, z: -self.zoom});
         let x_angle_m = Matrix4::from(Matrix3::from_angle_x(-self.x_angle));
         let z_angle_m = Matrix4::from(Matrix3::from_angle_z(-self.z_angle));
