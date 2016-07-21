@@ -71,16 +71,19 @@ pub fn get_selection_mesh(context: &mut Context) -> Mesh {
     let mut indices = Vec::new();
     let scale_1 = 0.6;
     let scale_2 = scale_1 + 0.05;
+    let mut i = 0;
     for dir in dirs() {
-        let vertex_1_1 = geom::index_to_hex_vertex_s(scale_1, dir.to_int());
-        let vertex_1_2 = geom::index_to_hex_vertex_s(scale_2, dir.to_int());
-        let vertex_2_1 = geom::index_to_hex_vertex_s(scale_1, dir.to_int() + 1);
-        let vertex_2_2 = geom::index_to_hex_vertex_s(scale_2, dir.to_int() + 1);
+        let dir_index = dir.to_int();
+        let vertex_1_1 = geom::index_to_hex_vertex_s(scale_1, dir_index);
+        let vertex_1_2 = geom::index_to_hex_vertex_s(scale_2, dir_index);
+        let vertex_2_1 = geom::index_to_hex_vertex_s(scale_1, dir_index + 1);
+        let vertex_2_2 = geom::index_to_hex_vertex_s(scale_2, dir_index + 1);
         vertices.push(Vertex{pos: vertex_1_1.v.into(), uv: [0.0, 0.0]});
         vertices.push(Vertex{pos: vertex_1_2.v.into(), uv: [0.0, 1.0]});
         vertices.push(Vertex{pos: vertex_2_1.v.into(), uv: [1.0, 0.0]});
         vertices.push(Vertex{pos: vertex_2_2.v.into(), uv: [1.0, 1.0]});
-        indices.extend(&[1, 2, 3, 1, 3, 4]);
+        indices.extend(&[i + 0, i + 1, i + 2, i + 1, i + 2, i + 3]);
+        i += 4;
     }
     Mesh::new(context, &vertices, &indices, texture)
 }

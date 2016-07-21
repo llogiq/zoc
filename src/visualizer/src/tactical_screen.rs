@@ -11,6 +11,7 @@ use cgmath::{
     Vector4,
     EuclideanVector,
     rad,
+    Matrix3,
     Matrix4,
     SquareMatrix,
     Point,
@@ -929,26 +930,32 @@ impl TacticalScreen {
 
     fn draw_scene_node(
         &self,
-        _context: &Context,
-        _node: &SceneNode,
-        _m: Matrix4<ZFloat>,
+        context: &mut Context,
+        node: &SceneNode,
+        m: Matrix4<ZFloat>,
     ) {
-        /*
-        let m = context.zgl.tr(m, &node.pos.v);
-        let m = context.zgl.rot_z(m, &node.rot);
+        let tr_mat = Matrix4::from_translation(node.pos.v);
+        // let rot_mat = Matrix4::from(Matrix3::from_angle_z(node.rot));
+        // let m: Matrix4<ZFloat> = self.camera.mat() * rot_mat * tr_mat;
+        let m: Matrix4<ZFloat> = m * tr_mat;
         if let Some(ref mesh_id) = node.mesh_id {
-            context.shader.set_uniform_mat4f(
-                &context.zgl, context.shader.get_mvp_mat(), &m);
+            // context.shader.set_uniform_mat4f(
+            //     &context.zgl, context.shader.get_mvp_mat(), &m);
             let id = mesh_id.id as usize;
-            self.meshes[id].draw(&context.zgl, &context.shader);
+            let mesh = &self.meshes[id];
+            let mut data = self.data.clone(); // лишнее клонирование?
+            // нужна матрица модели, хотя пока можно и mvp изуродовать
+            data.mvp = m.into();
+            data.texture.0 = mesh.texture.clone();
+            data.vbuf = mesh.vertex_buffer.clone();
+            context.encoder.draw(&mesh.slice, &context.pso, &data);
         }
         for node in &node.children {
             self.draw_scene_node(context, node, m);
         }
-        */
     }
 
-    fn draw_scene_nodes(&self, context: &Context) {
+    fn draw_scene_nodes(&self, context: &mut Context) {
         for (_, node) in self.scene().nodes() {
             let m = self.camera.mat();
             self.draw_scene_node(context, node, m);
