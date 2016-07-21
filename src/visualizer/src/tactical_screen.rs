@@ -95,18 +95,21 @@ fn get_max_camera_pos(map_size: &Size2) -> WorldPos {
     WorldPos{v: Vector3{x: -pos.v.x, y: -pos.v.y, z: 0.0}}
 }
 
+type Texture = gfx::handle::ShaderResourceView<gfx_gl::Resources, [f32; 4]>;
+
 struct Mesh {
     slice: gfx::Slice<gfx_gl::Resources>,
     vertex_buffer: gfx::handle::Buffer<gfx_gl::Resources, Vertex>,
+    texture: Texture,
 }
 
 impl Mesh {
-    fn new(context: &mut Context, vertices: &[Vertex], indices: &[u16]) -> Mesh {
+    fn new(context: &mut Context, vertices: &[Vertex], indices: &[u16], tex: Texture) -> Mesh {
         let (v, s) = context.factory.create_vertex_buffer_with_slice(vertices, indices);
         Mesh {
             slice: s,
             vertex_buffer: v,
-            // data: v,
+            texture: tex,
         }
     }
 }
@@ -115,7 +118,7 @@ impl Mesh {
 fn gen_tiles<F: Fn(bool) -> bool>(
     context: &mut Context,
     state: &PartialState,
-    // tex: &Texture,
+    tex: Texture,
     cond: F,
 ) -> Mesh {
     let mut vertices = Vec::new();
@@ -142,18 +145,18 @@ fn gen_tiles<F: Fn(bool) -> bool>(
         ]);
         i += 6;
     }
-    let /*mut*/ mesh = Mesh::new(context, &vertices, &indices);
-    // let texture = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO
+    let /*mut*/ mesh = Mesh::new(context, &vertices, &indices, tex);
+    // let texture = load_texture(&mut context.factory, &fs::load("tank.png").into_inner());
     // mesh.add_texture(context, texture);
     mesh
 }
 
-fn generate_visible_tiles_mesh(context: &mut Context, state: &PartialState /*, tex: &Texture*/) -> Mesh {
-    gen_tiles(context, state, /*tex,*/ |vis| vis)
+fn generate_visible_tiles_mesh(context: &mut Context, state: &PartialState, tex: Texture) -> Mesh {
+    gen_tiles(context, state, tex, |vis| vis)
 }
 
-fn generate_fogged_tiles_mesh(context: &mut Context, state: &PartialState /*, tex: &Texture*/) -> Mesh {
-    gen_tiles(context, state, /*tex,*/ |vis| !vis)
+fn generate_fogged_tiles_mesh(context: &mut Context, state: &PartialState, tex: Texture) -> Mesh {
+    gen_tiles(context, state, tex, |vis| !vis)
 }
 
 /*
@@ -386,10 +389,12 @@ pub struct TacticalScreen {
     // targets_mesh: Option<Mesh>,
     visible_map_mesh: Mesh,
     fow_map_mesh: Mesh,
-    // floor_tex: Texture,
+    floor_tex: Texture,
+    floor_tex_2: Texture,
     tx: Sender<context_menu_popup::Command>,
     rx: Receiver<context_menu_popup::Command>,
 
+    // TODO: эти надо будет удалить
     slice: gfx::Slice<gfx_gl::Resources>,
     data: pipe::Data<gfx_gl::Resources>,
 }
@@ -399,12 +404,14 @@ impl TacticalScreen {
         let core = Core::new(core_options);
         let map_size = core.map_size().clone();
         let player_info = PlayerInfoManager::new(&map_size, core_options);
+        let floor_tex = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO: floor.png
+        let floor_tex_2 = load_texture(&mut context.factory, &fs::load("truck.png").into_inner()); // TODO: floor.png
         // let floor_tex = Texture::new(&context.zgl, "floor.png"); // TODO: !!!
         // let mut meshes = Vec::new();
         let visible_map_mesh = generate_visible_tiles_mesh(
-            context, &player_info.get(core.player_id()).game_state, /*&floor_tex*/);
+            context, &player_info.get(core.player_id()).game_state, floor_tex.clone());
         let fow_map_mesh = generate_fogged_tiles_mesh(
-            context, &player_info.get(core.player_id()).game_state, /*&floor_tex*/);
+            context, &player_info.get(core.player_id()).game_state, floor_tex_2.clone());
         /*
         let big_building_mesh_w_id = add_mesh(
             &mut meshes, load_object_mesh(&context.zgl, "big_building_wire"));
@@ -483,19 +490,12 @@ impl TacticalScreen {
             &mut context.factory, &fs::load("tank.png").into_inner()); // TODO
 
         // мне нужна своя дата или надо кнтекстную менять?
-        // let mvp = view_matrix(
-        //     Rad::new(PI / 6.0),
-        //     Rad::new(-PI / 2.0 + PI / 8.0),
-        //     3.0,
-        //     1.0,
-        // );
         let data = pipe::Data {
             vbuf: vertex_buffer.clone(),
             texture: (test_texture, context.sampler.clone()),
             out: context.main_color.clone(),
             mvp: camera.mat().into(),
         };
-
 
         let mut screen = TacticalScreen {
             camera: camera,
@@ -518,7 +518,8 @@ impl TacticalScreen {
             map_text_manager: map_text_manager,
             visible_map_mesh: visible_map_mesh,
             fow_map_mesh: fow_map_mesh,
-            // floor_tex: floor_tex,
+            floor_tex: floor_tex,
+            floor_tex_2: floor_tex_2,
             tx: tx,
             rx: rx,
             slice: slice,
@@ -965,13 +966,16 @@ impl TacticalScreen {
         //     context.shader.get_mvp_mat(),
         //     &self.camera.mat(&context.zgl),
         // );
+
         context.set_basic_color(&::WHITE);
         {
+            self.data.texture.0 = self.visible_map_mesh.texture.clone();
             self.data.vbuf = self.visible_map_mesh.vertex_buffer.clone();
             context.encoder.draw(&self.visible_map_mesh.slice, &context.pso, &self.data);
         }
         context.set_basic_color(&::GREY);
         {
+            self.data.texture.0 = self.fow_map_mesh.texture.clone();
             self.data.vbuf = self.fow_map_mesh.vertex_buffer.clone();
             context.encoder.draw(&self.fow_map_mesh.slice, &context.pso, &self.data);
         }
@@ -1182,8 +1186,8 @@ impl TacticalScreen {
             let state = &mut i.game_state;
             self.event_visualizer.as_mut().unwrap().end(scene, state);
             state.apply_event(self.core.db(), self.event.as_ref().unwrap());
-            self.visible_map_mesh = generate_visible_tiles_mesh(context, state);
-            self.fow_map_mesh = generate_fogged_tiles_mesh(context, state); // , &self.floor_tex);
+            self.visible_map_mesh = generate_visible_tiles_mesh(context, state, self.floor_tex.clone());
+            self.fow_map_mesh = generate_fogged_tiles_mesh(context, state, self.floor_tex_2.clone());
         }
         self.event_visualizer = None;
         self.event = None;
