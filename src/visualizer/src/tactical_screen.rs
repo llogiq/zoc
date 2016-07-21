@@ -935,12 +935,9 @@ impl TacticalScreen {
         m: Matrix4<ZFloat>,
     ) {
         let tr_mat = Matrix4::from_translation(node.pos.v);
-        // let rot_mat = Matrix4::from(Matrix3::from_angle_z(node.rot));
-        // let m: Matrix4<ZFloat> = self.camera.mat() * rot_mat * tr_mat;
-        let m: Matrix4<ZFloat> = m * tr_mat;
+        let rot_mat = Matrix4::from(Matrix3::from_angle_z(node.rot));
+        let m = m * tr_mat * rot_mat;
         if let Some(ref mesh_id) = node.mesh_id {
-            // context.shader.set_uniform_mat4f(
-            //     &context.zgl, context.shader.get_mvp_mat(), &m);
             let id = mesh_id.id as usize;
             let mesh = &self.meshes[id];
             let mut data = self.data.clone(); // лишнее клонирование?
@@ -965,12 +962,6 @@ impl TacticalScreen {
     fn draw_map(&mut self, context: &mut Context) {
         self.data.mvp = self.camera.mat().into();
         context.encoder.draw(&self.slice, &context.pso, &self.data); // рисуем тестовое что-то там
-        // context.shader.set_uniform_mat4f(
-        //     &context.zgl,
-        //     context.shader.get_mvp_mat(),
-        //     &self.camera.mat(&context.zgl),
-        // );
-
         context.set_basic_color(&::WHITE);
         {
             self.data.texture.0 = self.visible_map_mesh.texture.clone();
