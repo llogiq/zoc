@@ -492,6 +492,7 @@ impl TacticalScreen {
             vbuf: vertex_buffer.clone(),
             texture: (test_texture, context.sampler.clone()),
             out: context.main_color.clone(),
+            out_depth: context.main_depth.clone(),
             mvp: camera.mat().into(),
         };
 

@@ -119,6 +119,7 @@ gfx_defines! {
         vbuf: gfx::VertexBuffer<Vertex> = (),
         texture: gfx::TextureSampler<[f32; 4]> = "t_Tex",
         out: gfx::BlendTarget<types::ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
+        out_depth: gfx::DepthTarget<types::DepthFormat> = gfx::preset::depth::LESS_EQUAL_WRITE,
     }
 }
 
@@ -158,6 +159,7 @@ impl Visualizer {
         let dtime = self.update_time();
         self.context.clear_color = [0.8, 0.8, 0.8, 1.0];
         self.context.encoder.clear(&self.context.main_color, self.context.clear_color);
+        self.context.encoder.clear_depth(&self.context.main_depth, 1.0);
         {
             let screen = self.screens.last_mut().unwrap();
             screen.tick(&mut self.context, dtime);
