@@ -145,10 +145,7 @@ fn gen_tiles<F: Fn(bool) -> bool>(
         ]);
         i += 6;
     }
-    let /*mut*/ mesh = Mesh::new(context, &vertices, &indices, tex);
-    // let texture = load_texture(&mut context.factory, &fs::load("tank.png").into_inner());
-    // mesh.add_texture(context, texture);
-    mesh
+    Mesh::new(context, &vertices, &indices, tex)
 }
 
 fn generate_visible_tiles_mesh(context: &mut Context, state: &PartialState, tex: Texture) -> Mesh {
