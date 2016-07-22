@@ -102,6 +102,7 @@ pub struct Mesh {
     slice: gfx::Slice<gfx_gl::Resources>,
     vertex_buffer: gfx::handle::Buffer<gfx_gl::Resources, Vertex>,
     texture: Texture,
+    is_wire: bool,
 }
 
 impl Mesh {
@@ -111,6 +112,7 @@ impl Mesh {
             slice: s,
             vertex_buffer: v,
             texture: tex,
+            is_wire: false,
         }
     }
 }
@@ -131,11 +133,12 @@ fn gen_tiles<F: Fn(bool) -> bool>(
         }
         let pos = geom::map_pos_to_world_pos(&tile_pos);
         for dir in dirs() {
-            let dir_index = dir.to_int();
-            let vertex = geom::index_to_hex_vertex(dir_index);
+            let vertex = geom::index_to_hex_vertex(dir.to_int());
+            let uv = vertex.v.truncate() / (geom::HEX_EX_RADIUS * 2.0);
+            let uv = uv + Vector2{x: 0.5, y: 0.5};
             vertices.push(Vertex {
                 pos: (pos.v + vertex.v).into(),
-                uv: ((vertex.v.truncate() * 0.5) + Vector2{x: 0.5, y: 0.5}).into(),
+                uv: uv.into(),
             });
         }
         indices.extend(&[
@@ -256,21 +259,24 @@ fn get_marker<P: AsRef<Path>>(zgl: &Zgl, tex_path: P) -> Mesh {
     mesh.add_texture(zgl, tex, &tex_data);
     mesh
 }
+*/
 
-fn load_object_mesh(zgl: &Zgl, name: &str) -> Mesh {
-    let obj = obj::Model::new(&format!("{}.obj", name));
-    let mut mesh = Mesh::new(zgl, &obj.build());
-    if obj.is_wire() {
-        mesh.set_mode(MeshRenderMode::Lines);
-        // TODO: fix ugly color hack
-        mesh.add_texture(zgl, Texture::new(zgl, "black.png"), &[]);
+fn load_object_mesh(context: &mut Context, name: &str) -> Mesh {
+    let model = obj::Model::new(&format!("{}.obj", name));
+    assert!(!model.is_wire());
+    let is_wire = model.is_wire();
+    let texture_name = if is_wire {
+        format!("black.png")
     } else {
-        let tex = Texture::new(zgl, &format!("{}.png", name));
-        mesh.add_texture(zgl, tex, &obj.build_tex_coord());
-    }
+        format!("{}.png", name)
+    };
+    let texture_data = fs::load(texture_name).into_inner();
+    let texture = load_texture(&mut context.factory, &texture_data);
+    let (vertices, indices) = obj::build(model);
+    let mut mesh = Mesh::new(context, &vertices, &indices, texture);
+    mesh.is_wire = is_wire;
     mesh
 }
-*/
 
 fn get_marker_mesh_id<'a>(mesh_ids: &'a MeshIdManager, player_id: &PlayerId) -> &'a MeshId {
     match player_id.id {
@@ -296,11 +302,11 @@ fn add_mesh(meshes: &mut Vec<Mesh>, mesh: Mesh) -> MeshId {
 
 fn get_unit_type_visual_info(
     db: &Db,
-    _context: &mut Context,
-    // meshes: &mut Vec<Mesh>,
+    context: &mut Context,
+    meshes: &mut Vec<Mesh>,
 ) -> UnitTypeVisualInfoManager {
     let mut manager = UnitTypeVisualInfoManager::new();
-    for &(unit_name, _model_name, move_speed) in &[
+    for &(unit_name, model_name, move_speed) in &[
         ("soldier", "soldier", 2.0),
         ("smg", "submachine", 2.0),
         ("scout", "scout", 2.5),
@@ -315,8 +321,7 @@ fn get_unit_type_visual_info(
         ("jeep", "jeep", 3.5),
     ] {
         manager.add_info(&db.unit_type_id(unit_name), UnitTypeVisualInfo {
-            // mesh_id: add_mesh(meshes, load_object_mesh(zgl, model_name)),
-            mesh_id: MeshId{id: 0},
+            mesh_id: add_mesh(meshes, load_object_mesh(context, model_name)),
             move_speed: move_speed,
         });
     }
@@ -400,24 +405,24 @@ impl TacticalScreen {
         let core = Core::new(core_options);
         let map_size = core.map_size().clone();
         let player_info = PlayerInfoManager::new(&map_size, core_options);
-        let floor_tex = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO: floor.png
-        let floor_tex_2 = load_texture(&mut context.factory, &fs::load("truck.png").into_inner()); // TODO: floor.png
+        let floor_tex = load_texture(&mut context.factory, &fs::load("floor.png").into_inner()); // TODO: floor.png
+        let floor_tex_2 = load_texture(&mut context.factory, &fs::load("dark_floor.png").into_inner()); // TODO: floor.png
         // let floor_tex = Texture::new(&context.zgl, "floor.png"); // TODO: !!!
         let mut meshes = Vec::new();
         let visible_map_mesh = generate_visible_tiles_mesh(
             context, &player_info.get(core.player_id()).game_state, floor_tex.clone());
         let fow_map_mesh = generate_fogged_tiles_mesh(
             context, &player_info.get(core.player_id()).game_state, floor_tex_2.clone());
-        /*
-        let big_building_mesh_w_id = add_mesh(
-            &mut meshes, load_object_mesh(&context.zgl, "big_building_wire"));
-        let building_mesh_w_id = add_mesh(
-            &mut meshes, load_object_mesh(&context.zgl, "building_wire"));
-        let trees_mesh_id = add_mesh(
-            &mut meshes, load_object_mesh(&context.zgl, "trees"));
-        */
         let selection_marker_mesh_id = add_mesh(
             &mut meshes, get_selection_mesh(context));
+        /*
+        let big_building_mesh_w_id = add_mesh(
+            &mut meshes, load_object_mesh(context, "big_building_wire"));
+        let building_mesh_w_id = add_mesh(
+            &mut meshes, load_object_mesh(context, "building_wire"));
+        */
+        let trees_mesh_id = add_mesh(
+            &mut meshes, load_object_mesh(context, "trees"));
         /*
         let shell_mesh_id = add_mesh(
             &mut meshes, get_shell_mesh(&context.zgl));
@@ -427,8 +432,7 @@ impl TacticalScreen {
             &mut meshes, get_marker(&context.zgl, "flag2.png"));
         */
         let unit_type_visual_info
-            // = get_unit_type_visual_info(core.db(), &mut context, &mut meshes);
-            = get_unit_type_visual_info(core.db(), context);
+            = get_unit_type_visual_info(core.db(), context, &mut meshes);
         let mut camera = Camera::new(&context.win_size);
         camera.set_max_pos(get_max_camera_pos(&map_size));
         camera.set_pos(get_initial_camera_pos(&map_size)); // TODO
@@ -453,13 +457,12 @@ impl TacticalScreen {
         let mesh_ids = MeshIdManager {
             // big_building_mesh_w_id: big_building_mesh_w_id,
             // building_mesh_w_id: building_mesh_w_id,
-            // trees_mesh_id: trees_mesh_id,
+            trees_mesh_id: trees_mesh_id,
             // shell_mesh_id: shell_mesh_id,
             // marker_1_mesh_id: marker_1_mesh_id,
             // marker_2_mesh_id: marker_2_mesh_id,
             big_building_mesh_w_id: MeshId{id: 0},
             building_mesh_w_id: MeshId{id: 0},
-            trees_mesh_id: MeshId{id: 0},
             shell_mesh_id: MeshId{id: 0},
             marker_1_mesh_id: MeshId{id: 0},
             marker_2_mesh_id: MeshId{id: 0},

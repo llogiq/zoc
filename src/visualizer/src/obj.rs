@@ -6,13 +6,13 @@ use std::io::{BufRead};
 use std::path::{Path};
 use std::str::{SplitWhitespace, Split, FromStr};
 use cgmath::{Vector3, Vector2};
-use core::types::{ZInt, ZFloat};
+use core::types::{ZFloat};
 use core::fs;
 use types::{VertexCoord, TextureCoord};
 use ::{Vertex};
 
 struct Line {
-    vertex: [ZInt; 2],
+    vertex: [u16; 2],
 }
 
 type Face = [[u16; 3]; 3];
@@ -127,11 +127,10 @@ impl Model {
     }
 }
 
-// надо выдирать код построения из Нергала - там новые вершины создаются-с
+// TODO: упростить
 pub fn build(model: Model) -> (Vec<Vertex>, Vec<u16>) {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
-
     let mut h: HashMap<(u16, u16), u16> = HashMap::new();
     for f in model.faces {
         for v in &f {
@@ -152,21 +151,16 @@ pub fn build(model: Model) -> (Vec<Vertex>, Vec<u16>) {
             indices.push(id);
         }
     }
-
-    // let mut mesh = Vec::new();
-    // for face in &self.faces {
-    //     for i in 0 .. face.vertex.len() {
-    //         let vertex_id = face.vertex[i] as usize - 1;
-    //         mesh.push(self.coords[vertex_id].clone());
-    //     }
-    // }
-    // for line in &self.lines {
-    //     for i in 0 .. line.vertex.len() {
-    //         let vertex_id = line.vertex[i] as usize - 1;
-    //         mesh.push(self.coords[vertex_id].clone());
-    //     }
-    // }
-    // mesh
+    for line in model.lines {
+        for i in 0 .. line.vertex.len() {
+            let vertex_id = line.vertex[i] as usize - 1;
+            vertices.push(Vertex {
+                pos: model.coords[vertex_id].v.into(),
+                uv: [0.0, 0.0],
+            });
+            indices.push(vertex_id as u16);
+        }
+    }
     (vertices, indices)
 }
 
