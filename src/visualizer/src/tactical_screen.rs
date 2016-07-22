@@ -263,7 +263,6 @@ fn get_marker<P: AsRef<Path>>(zgl: &Zgl, tex_path: P) -> Mesh {
 
 fn load_object_mesh(context: &mut Context, name: &str) -> Mesh {
     let model = obj::Model::new(&format!("{}.obj", name));
-    assert!(!model.is_wire());
     let is_wire = model.is_wire();
     let texture_name = if is_wire {
         format!("black.png")
@@ -415,12 +414,10 @@ impl TacticalScreen {
             context, &player_info.get(core.player_id()).game_state, floor_tex_2.clone());
         let selection_marker_mesh_id = add_mesh(
             &mut meshes, get_selection_mesh(context));
-        /*
         let big_building_mesh_w_id = add_mesh(
             &mut meshes, load_object_mesh(context, "big_building_wire"));
         let building_mesh_w_id = add_mesh(
             &mut meshes, load_object_mesh(context, "building_wire"));
-        */
         let trees_mesh_id = add_mesh(
             &mut meshes, load_object_mesh(context, "trees"));
         /*
@@ -455,14 +452,12 @@ impl TacticalScreen {
         let button_next_unit_id = button_manager.add_button(
             Button::new(context, "[>]", &pos));
         let mesh_ids = MeshIdManager {
-            // big_building_mesh_w_id: big_building_mesh_w_id,
-            // building_mesh_w_id: building_mesh_w_id,
+            big_building_mesh_w_id: big_building_mesh_w_id,
+            building_mesh_w_id: building_mesh_w_id,
             trees_mesh_id: trees_mesh_id,
             // shell_mesh_id: shell_mesh_id,
             // marker_1_mesh_id: marker_1_mesh_id,
             // marker_2_mesh_id: marker_2_mesh_id,
-            big_building_mesh_w_id: MeshId{id: 0},
-            building_mesh_w_id: MeshId{id: 0},
             shell_mesh_id: MeshId{id: 0},
             marker_1_mesh_id: MeshId{id: 0},
             marker_2_mesh_id: MeshId{id: 0},
@@ -946,7 +941,11 @@ impl TacticalScreen {
             data.mvp = m.into();
             data.texture.0 = mesh.texture.clone();
             data.vbuf = mesh.vertex_buffer.clone();
-            context.encoder.draw(&mesh.slice, &context.pso, &data);
+            if mesh.is_wire {
+                context.encoder.draw(&mesh.slice, &context.pso_wire, &data);
+            } else {
+                context.encoder.draw(&mesh.slice, &context.pso, &data);
+            }
         }
         for node in &node.children {
             self.draw_scene_node(context, node, m);

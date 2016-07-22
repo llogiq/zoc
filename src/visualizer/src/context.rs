@@ -12,7 +12,7 @@ use ::{pipe};
 
 use image;
 use std::io::Cursor;
-use gfx::traits::FactoryExt;
+use gfx::traits::{Factory, FactoryExt};
 use gfx::handle::{RenderTargetView, DepthStencilView, ShaderResourceView};
 use gfx::{self, tex};
 use gfx_gl;
@@ -33,6 +33,7 @@ pub fn load_texture<R, F>(factory: &mut F, data: &[u8]) -> ShaderResourceView<R,
 fn new_pso(
     window: &glutin::Window,
     factory: &mut gfx_gl::Factory,
+    primitive: gfx::Primitive,
 ) -> gfx::PipelineState<gfx_gl::Resources, pipe::Meta> {
     let shader_header = match window.get_api() {
         Api::OpenGl => fs::load("shader/pre_gl.glsl").into_inner(),
@@ -42,9 +43,13 @@ fn new_pso(
     vertex_shader.extend(fs::load("shader/v.glsl").into_inner());
     let mut fragment_shader = shader_header;
     fragment_shader.extend(fs::load("shader/f.glsl").into_inner());
-    factory.create_pipeline_simple(
-        &vertex_shader,
-        &fragment_shader,
+    let vs = factory.create_shader_vertex(&vertex_shader).unwrap();
+    let ps = factory.create_shader_pixel(&fragment_shader).unwrap();
+    let shader_set = gfx::ShaderSet::Simple(vs, ps);
+    factory.create_pipeline_state(
+        &shader_set,
+        primitive,
+        gfx::state::Rasterizer::new_fill(),
         pipe::new(),
     ).unwrap()
 }
@@ -81,6 +86,7 @@ pub struct Context {
     pub main_depth: DepthStencilView<gfx_gl::Resources, (gfx::format::D24_S8, gfx::format::Unorm)>,
     pub encoder: gfx::Encoder<gfx_gl::Resources, gfx_gl::CommandBuffer>,
     pub pso: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
+    pub pso_wire: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
     pub sampler: gfx::handle::Sampler<gfx_gl::Resources>,
     pub factory: gfx_gl::Factory,
 }
@@ -99,7 +105,8 @@ impl Context {
         let (window, device, mut factory, main_color, main_depth)
             = gfx_glutin::init(builder);
         let encoder = factory.create_command_buffer().into();
-        let pso = new_pso(&window, &mut factory);
+        let pso = new_pso(&window, &mut factory, gfx::Primitive::TriangleList);
+        let pso_wire = new_pso(&window, &mut factory, gfx::Primitive::LineList);
         let sampler = factory.create_sampler_linear();
         // shader.activate(&zgl);
         // let basic_color_id = shader.get_uniform_color(&zgl, "basic_color");
@@ -123,6 +130,7 @@ impl Context {
             main_depth: main_depth,
             encoder: encoder,
             pso: pso,
+            pso_wire: pso_wire,
             sampler: sampler,
             should_close: false,
             commands_tx: tx,

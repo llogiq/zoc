@@ -152,13 +152,13 @@ pub fn build(model: Model) -> (Vec<Vertex>, Vec<u16>) {
         }
     }
     for line in model.lines {
-        for i in 0 .. line.vertex.len() {
-            let vertex_id = line.vertex[i] as usize - 1;
+        for v in line.vertex.iter() {
+            let vertex_id = *v as usize - 1;
             vertices.push(Vertex {
                 pos: model.coords[vertex_id].v.into(),
                 uv: [0.0, 0.0],
             });
-            indices.push(vertex_id as u16);
+            indices.push(vertices.len() as u16 - 1);
         }
     }
     (vertices, indices)
