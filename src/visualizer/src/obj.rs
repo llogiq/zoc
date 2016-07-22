@@ -1,5 +1,6 @@
 // See LICENSE file for copyright and license details.
 
+use std::collections::{HashMap};
 use std::fmt::{Debug};
 use std::io::{BufRead};
 use std::path::{Path};
@@ -7,22 +8,18 @@ use std::str::{SplitWhitespace, Split, FromStr};
 use cgmath::{Vector3, Vector2};
 use core::types::{ZInt, ZFloat};
 use core::fs;
-use types::{VertexCoord, TextureCoord, Normal};
+use types::{VertexCoord, TextureCoord};
+use ::{Vertex};
 
 struct Line {
     vertex: [ZInt; 2],
 }
 
-struct Face {
-    vertex: [ZInt; 3],
-    texture: [ZInt; 3],
-    normal: [ZInt; 3],
-}
+type Face = [[u16; 3]; 3];
 
 pub struct Model {
     coords: Vec<VertexCoord>,
-    normals: Vec<Normal>,
-    texture_coords: Vec<TextureCoord>,
+    uvs: Vec<TextureCoord>,
     faces: Vec<Face>,
     lines: Vec<Line>,
 }
@@ -45,8 +42,7 @@ impl Model {
     pub fn new<P: AsRef<Path>>(path: P) -> Model {
         let mut obj = Model {
             coords: Vec::new(),
-            normals: Vec::new(),
-            texture_coords: Vec::new(),
+            uvs: Vec::new(),
             faces: Vec::new(),
             lines: Vec::new(),
         };
@@ -63,14 +59,6 @@ impl Model {
         }}
     }
 
-    fn read_vn(words: &mut SplitWhitespace) -> Normal {
-        Normal{v: Vector3 {
-            x: parse_word(words),
-            y: parse_word(words),
-            z: parse_word(words),
-        }}
-    }
-
     fn read_vt(words: &mut SplitWhitespace) -> TextureCoord {
         TextureCoord{v: Vector2 {
             x: parse_word(words),
@@ -78,21 +66,17 @@ impl Model {
         }}
     }
 
-    fn read_f(words: &mut SplitWhitespace) -> Face {
-        let mut face = Face {
-            vertex: [0, 0, 0],
-            texture: [0, 0, 0],
-            normal: [0, 0, 0],
-        };
-        let mut i = 0;
-        for group in words.by_ref() {
-            let mut w = group.split('/');
-            face.vertex[i] = parse_charsplit(&mut w);
-            face.texture[i] = parse_charsplit(&mut w);
-            face.normal[i] = parse_charsplit(&mut w);
-            i += 1;
+    fn read_f(words: &mut SplitWhitespace) -> [[u16; 3]; 3] {
+        let mut f = [[0; 3]; 3];
+        for (i, group) in words.by_ref().enumerate() {
+            let w = &mut group.split('/');
+            f[i] = [
+                parse_charsplit(w),
+                parse_charsplit(w),
+                parse_charsplit(w),
+            ];
         }
-        face
+        f
     }
 
     fn read_l(words: &mut SplitWhitespace) -> Line {
@@ -114,11 +98,15 @@ impl Model {
                 let w = &mut words;
                 match tag {
                     "v" => self.coords.push(Model::read_v(w)),
-                    "vn" => self.normals.push(Model::read_vn(w)),
-                    "vt" => self.texture_coords.push(Model::read_vt(w)),
+                    "vn" => {},
+                    "vt" => self.uvs.push(Model::read_vt(w)),
                     "f" => self.faces.push(Model::read_f(w)),
                     "l" => self.lines.push(Model::read_l(w)),
-                    _ => {},
+                    "s" => {},
+                    "#" => {},
+                    unexpected_tag => {
+                        println!("obj: unexpected tag: {}", unexpected_tag);
+                    }
                 }
             }
             _ => {},
@@ -134,37 +122,52 @@ impl Model {
         }
     }
 
-    pub fn build(&self) -> Vec<VertexCoord> {
-        let mut mesh = Vec::new();
-        for face in &self.faces {
-            for i in 0 .. face.vertex.len() {
-                let vertex_id = face.vertex[i] as usize - 1;
-                mesh.push(self.coords[vertex_id].clone());
-            }
-        }
-        for line in &self.lines {
-            for i in 0 .. line.vertex.len() {
-                let vertex_id = line.vertex[i] as usize - 1;
-                mesh.push(self.coords[vertex_id].clone());
-            }
-        }
-        mesh
-    }
-
-    pub fn build_tex_coord(&self) -> Vec<TextureCoord> {
-        let mut tex_coords = Vec::new();
-        for face in &self.faces {
-            for i in 0 .. face.texture.len() {
-                let texture_coord_id = face.texture[i] as usize - 1;
-                tex_coords.push(self.texture_coords[texture_coord_id].clone());
-            }
-        }
-        tex_coords
-    }
-
     pub fn is_wire(&self) -> bool {
         !self.lines.is_empty()
     }
+}
+
+// надо выдирать код построения из Нергала - там новые вершины создаются-с
+pub fn build(model: Model) -> (Vec<Vertex>, Vec<u16>) {
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+
+    let mut h: HashMap<(u16, u16), u16> = HashMap::new();
+    for f in model.faces {
+        for v in &f {
+            let pos_id = v[0] - 1;
+            let uv_id = v[1] - 1;
+            let key = (pos_id, uv_id);
+            let id = if h.contains_key(&key) {
+                *h.get(&key).unwrap()
+            } else {
+                let id = vertices.len() as u16;
+                vertices.push(Vertex {
+                    pos: model.coords[pos_id as usize].v.into(),
+                    uv: model.uvs[uv_id as usize].v.into(),
+                });
+                h.insert(key, id);
+                id
+            };
+            indices.push(id);
+        }
+    }
+
+    // let mut mesh = Vec::new();
+    // for face in &self.faces {
+    //     for i in 0 .. face.vertex.len() {
+    //         let vertex_id = face.vertex[i] as usize - 1;
+    //         mesh.push(self.coords[vertex_id].clone());
+    //     }
+    // }
+    // for line in &self.lines {
+    //     for i in 0 .. line.vertex.len() {
+    //         let vertex_id = line.vertex[i] as usize - 1;
+    //         mesh.push(self.coords[vertex_id].clone());
+    //     }
+    // }
+    // mesh
+    (vertices, indices)
 }
 
 // vim: set tabstop=4 shiftwidth=4 softtabstop=4 expandtab:

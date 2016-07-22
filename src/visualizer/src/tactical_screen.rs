@@ -470,8 +470,6 @@ impl TacticalScreen {
         {
             // TODO: просто что бы было
             let obj = obj::Model::new(&format!("{}.obj", "tank"));
-            let _ = obj.build();
-            let _ = obj.build_tex_coord();
             let _ = obj.is_wire();
         }
 
