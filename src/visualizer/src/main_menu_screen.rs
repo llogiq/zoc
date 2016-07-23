@@ -79,6 +79,13 @@ impl MainMenuScreen {
         if !is_tap(context) {
             return;
         }
+        {
+            // TODO: временный костыль, что бы без клавиатуры И кнопок
+            // можно было начать игру просто касанием
+            println!("START TACTICAL SCREEN");
+            let tactical_screen = Box::new(TacticalScreen::new(context, &Default::default()));
+            context.add_command(ScreenCommand::PushScreen(tactical_screen));
+        }
         if let Some(button_id) = self.button_manager.get_clicked_button_id(context) {
             self.handle_event_button_press(context, &button_id);
         }
