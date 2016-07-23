@@ -485,6 +485,7 @@ impl TacticalScreen {
 
         // мне нужна своя дата или надо кнтекстную менять?
         let data = pipe::Data {
+            basic_color: [1.0, 1.0, 1.0, 1.0],
             vbuf: vertex_buffer.clone(),
             texture: (test_texture, context.sampler.clone()),
             out: context.main_color.clone(),
@@ -962,14 +963,14 @@ impl TacticalScreen {
     fn draw_map(&mut self, context: &mut Context) {
         self.data.mvp = self.camera.mat().into();
         context.encoder.draw(&self.slice, &context.pso, &self.data); // рисуем тестовое что-то там
-        context.set_basic_color(&::WHITE);
         {
+            self.data.basic_color = [1.0, 1.0, 1.0, 1.0];
             self.data.texture.0 = self.visible_map_mesh.texture.clone();
             self.data.vbuf = self.visible_map_mesh.vertex_buffer.clone();
             context.encoder.draw(&self.visible_map_mesh.slice, &context.pso, &self.data);
         }
-        context.set_basic_color(&::GREY);
         {
+            self.data.basic_color = [0.7, 0.7, 0.7, 1.0];
             self.data.texture.0 = self.fow_map_mesh.texture.clone();
             self.data.vbuf = self.fow_map_mesh.vertex_buffer.clone();
             context.encoder.draw(&self.fow_map_mesh.slice, &context.pso, &self.data);
@@ -977,16 +978,16 @@ impl TacticalScreen {
     }
 
     fn draw_scene(&mut self, context: &mut Context, dtime: u64) {
-        context.set_basic_color(&::WHITE);
+        self.data.basic_color = [1.0, 1.0, 1.0, 1.0];
         self.draw_scene_nodes(context);
         self.draw_map(context);
         /*
         if let Some(ref walkable_mesh) = self.walkable_mesh {
-            context.set_basic_color(&::BLUE);
+            self.data.basic_color = [0.0, 0.0, 1.0, 1.0];
             walkable_mesh.draw(&context.zgl, &context.shader);
         }
         if let Some(ref targets_mesh) = self.targets_mesh {
-            context.set_basic_color(&::RED);
+            self.data.basic_color = [1.0, 0.0, 0.0, 1.0];
             targets_mesh.draw(&context.zgl, &context.shader);
         }
         */
@@ -1003,7 +1004,7 @@ impl TacticalScreen {
             context.encoder.clear(&context.main_color, context.clear_color);
         }
         self.draw_scene(context, dtime);
-        context.set_basic_color(&::BLACK);
+        self.data.basic_color = [0.0, 0.0, 0.0, 1.0];
         self.map_text_manager.draw(context, &self.camera, dtime);
         self.button_manager.draw(&context);
     }

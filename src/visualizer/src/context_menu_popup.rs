@@ -229,7 +229,10 @@ impl ContextMenuPopup {
 
 impl Screen for ContextMenuPopup {
     fn tick(&mut self, context: &mut Context, _: u64) {
-        context.set_basic_color(&::BLACK);
+        // TODO: а вот это не заработает, пока
+        // я не вынесу data из экранов в контекст.
+        // А почему бы и нет? Все равно я там почти все поля переприсваиваю каждый раз.
+        // context.set_basic_color(&::BLACK);
         self.button_manager.draw(context);
     }
 

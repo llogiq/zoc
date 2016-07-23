@@ -118,6 +118,7 @@ gfx_defines! {
     }
 
     pipeline pipe {
+        basic_color: gfx::Global<[f32; 4]> = "u_Basic_color",
         mvp: gfx::Global<[[f32; 4]; 4]> = "u_ModelViewProj",
         vbuf: gfx::VertexBuffer<Vertex> = (),
         texture: gfx::TextureSampler<[f32; 4]> = "t_Tex",

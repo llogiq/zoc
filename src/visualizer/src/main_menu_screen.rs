@@ -58,6 +58,7 @@ impl MainMenuScreen {
         // мне нужна своя дата или надо кнтекстную менять?
         let mvp = Matrix4::identity();
         let data = pipe::Data {
+            basic_color: [1.0, 1.0, 1.0, 1.0],
             vbuf: vertex_buffer.clone(),
             texture: (test_texture, context.sampler.clone()),
             out: context.main_color.clone(),
@@ -130,7 +131,8 @@ impl Screen for MainMenuScreen {
             context.encoder.clear(&context.main_color, context.clear_color);
             context.encoder.draw(&self.slice, &context.pso, &self.data); // рисуем тестовое что-то там
         }
-        context.set_basic_color(&::BLACK);
+        // self.data.basic_color = [0.0, 0.0, 0.0, 1.0]; // TODO: это для нормального текста
+        self.data.basic_color = [0.0, 0.0, 1.0, 1.0];
         self.button_manager.draw(context);
     }
 

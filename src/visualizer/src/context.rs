@@ -7,7 +7,7 @@ use glutin::{self, Api, Event, MouseButton, GlRequest};
 use glutin::ElementState::{Pressed, Released};
 use core::types::{Size2, ZInt};
 use screen::{ScreenCommand};
-use types::{ScreenPos, Color4, ColorFormat, SurfaceFormat};
+use types::{ScreenPos, /*Color4,*/ ColorFormat, SurfaceFormat};
 use ::{pipe};
 
 use image;
@@ -70,8 +70,6 @@ pub struct MouseState {
 pub struct Context {
     pub win_size: Size2,
     // pub font_stash: FontStash,
-    // pub shader: Shader,
-    // pub basic_color_id: ColorId,
     mouse: MouseState,
     should_close: bool,
     commands_tx: Sender<ScreenCommand>,
@@ -108,19 +106,15 @@ impl Context {
         let pso = new_pso(&window, &mut factory, gfx::Primitive::TriangleList);
         let pso_wire = new_pso(&window, &mut factory, gfx::Primitive::LineList);
         let sampler = factory.create_sampler_linear();
-        // shader.activate(&zgl);
-        // let basic_color_id = shader.get_uniform_color(&zgl, "basic_color");
         let win_size = get_win_size(&window);
         // let font_size = 40.0;
         // // TODO: read font name from config
         // let font_stash = FontStash::new(
         //     &zgl, &Path::new("DroidSerif-Regular.ttf"), font_size);
         Context {
-            // shader: shader,
             // window: window,
             win_size: win_size,
             // font_stash: font_stash,
-            // basic_color_id: basic_color_id,
 
             clear_color: [0.0, 0.0, 1.0, 1.0],
             window: window,
@@ -151,9 +145,12 @@ impl Context {
         &self.mouse
     }
 
-    pub fn set_basic_color(&self, _color: &Color4) {
-        // self.shader.set_uniform_color(&self.zgl, &self.basic_color_id, color);
+    /*
+    // если data живет вовне (что может быть ошибкой, кстати) то и этот метод должен быть не тут
+    pub fn set_basic_color(&mut self, color: &Color4) {
+        self.data.basic_color = [color.r, color.g, color.b, color.r];
     }
+    */
 
     pub fn add_command(&mut self, command: ScreenCommand) {
         self.commands_tx.send(command)
