@@ -23,6 +23,6 @@ android_run: android
 	adb install -r $(APK)
 	adb logcat -c
 	adb shell am start -n rust.zoc/rust.zoc.MainActivity
-	adb logcat -v time | grep Rust
+	adb logcat -v time | grep 'Rust\|DEBUG'
 
 .PHONY: zoc run android android_run test
