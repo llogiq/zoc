@@ -3,7 +3,7 @@
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::f32::consts::{PI};
 use rand::{thread_rng, Rng};
-// use std::path::{Path};
+use std::path::{Path};
 use std::collections::{HashMap};
 use cgmath::{
     Vector2,
@@ -253,25 +253,20 @@ fn get_shell_mesh(zgl: &Zgl) -> Mesh {
     mesh.add_texture(zgl, tex, &tex_data);
     mesh
 }
-
-fn get_marker<P: AsRef<Path>>(zgl: &Zgl, tex_path: P) -> Mesh {
-    let n = 0.2;
-    let vertex_data = vec!(
-        VertexCoord{v: Vector3{x: -n, y: 0.0, z: 0.1}},
-        VertexCoord{v: Vector3{x: 0.0, y: n * 1.4, z: 0.1}},
-        VertexCoord{v: Vector3{x: n, y: 0.0, z: 0.1}},
-    );
-    let tex_data = vec!(
-        TextureCoord{v: Vector2{x: 0.0, y: 0.0}},
-        TextureCoord{v: Vector2{x: 1.0, y: 0.0}},
-        TextureCoord{v: Vector2{x: 0.5, y: 0.5}},
-    );
-    let mut mesh = Mesh::new(zgl, &vertex_data);
-    let tex = Texture::new(zgl, tex_path);
-    mesh.add_texture(zgl, tex, &tex_data);
-    mesh
-}
 */
+
+fn get_marker<P: AsRef<Path>>(context: &mut Context, tex_path: P) -> Mesh {
+    let n = 0.2;
+    let vertices = [
+        Vertex{pos: [-n, 0.0, 0.1], uv: [0.0, 0.0]},
+        Vertex{pos: [0.0, n * 1.4, 0.1], uv: [1.0, 0.0]},
+        Vertex{pos: [n, 0.0, 0.1], uv: [0.5, 0.5]},
+    ];
+    let indices = [0, 1, 2];
+    let texture_data = fs::load(tex_path).into_inner();
+    let texture = load_texture(&mut context.factory, &texture_data);
+    Mesh::new(context, &vertices, &indices, texture)
+}
 
 fn load_object_mesh(context: &mut Context, name: &str) -> Mesh {
     let model = obj::Model::new(&format!("{}.obj", name));
@@ -431,11 +426,11 @@ impl TacticalScreen {
         /*
         let shell_mesh_id = add_mesh(
             &mut meshes, get_shell_mesh(&context.zgl));
-        let marker_1_mesh_id = add_mesh(
-            &mut meshes, get_marker(&context.zgl, "flag1.png"));
-        let marker_2_mesh_id = add_mesh(
-            &mut meshes, get_marker(&context.zgl, "flag2.png"));
         */
+        let marker_1_mesh_id = add_mesh(
+            &mut meshes, get_marker(context, "flag1.png"));
+        let marker_2_mesh_id = add_mesh(
+            &mut meshes, get_marker(context, "flag2.png"));
         let unit_type_visual_info
             = get_unit_type_visual_info(core.db(), context, &mut meshes);
         let mut camera = Camera::new(&context.win_size);
@@ -464,11 +459,9 @@ impl TacticalScreen {
             building_mesh_w_id: building_mesh_w_id,
             trees_mesh_id: trees_mesh_id,
             // shell_mesh_id: shell_mesh_id,
-            // marker_1_mesh_id: marker_1_mesh_id,
-            // marker_2_mesh_id: marker_2_mesh_id,
+            marker_1_mesh_id: marker_1_mesh_id,
+            marker_2_mesh_id: marker_2_mesh_id,
             shell_mesh_id: MeshId{id: 0},
-            marker_1_mesh_id: MeshId{id: 0},
-            marker_2_mesh_id: MeshId{id: 0},
         };
         let map_text_manager = MapTextManager::new(/*&mut font_stash*/);
         let (tx, rx) = channel();
