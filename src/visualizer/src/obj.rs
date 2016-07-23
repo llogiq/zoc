@@ -128,12 +128,12 @@ impl Model {
 }
 
 // TODO: упростить
-pub fn build(model: Model) -> (Vec<Vertex>, Vec<u16>) {
+pub fn build(model: &Model) -> (Vec<Vertex>, Vec<u16>) {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     let mut h: HashMap<(u16, u16), u16> = HashMap::new();
-    for f in model.faces {
-        for v in &f {
+    for f in &model.faces {
+        for v in f {
             let pos_id = v[0] - 1;
             let uv_id = v[1] - 1;
             let key = (pos_id, uv_id);
@@ -151,7 +151,7 @@ pub fn build(model: Model) -> (Vec<Vertex>, Vec<u16>) {
             indices.push(id);
         }
     }
-    for line in model.lines {
+    for line in &model.lines {
         for v in line.vertex.iter() {
             let vertex_id = *v as usize - 1;
             vertices.push(Vertex {

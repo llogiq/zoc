@@ -115,6 +115,18 @@ impl Mesh {
             is_wire: false,
         }
     }
+
+    pub fn new_wireframe(context: &mut Context, vertices: &[Vertex], indices: &[u16]) -> Mesh {
+        let (v, s) = context.factory.create_vertex_buffer_with_slice(vertices, indices);
+        let texture_data = fs::load("black.png").into_inner();
+        let texture = load_texture(&mut context.factory, &texture_data);
+        Mesh {
+            slice: s,
+            vertex_buffer: v,
+            texture: texture,
+            is_wire: true,
+        }
+    }
 }
 
 // TODO: `cond: F` -> `enum NameMe{Visible, Fogged}`
@@ -263,18 +275,14 @@ fn get_marker<P: AsRef<Path>>(zgl: &Zgl, tex_path: P) -> Mesh {
 
 fn load_object_mesh(context: &mut Context, name: &str) -> Mesh {
     let model = obj::Model::new(&format!("{}.obj", name));
-    let is_wire = model.is_wire();
-    let texture_name = if is_wire {
-        format!("black.png")
+    let (vertices, indices) = obj::build(&model);
+    if model.is_wire() {
+        Mesh::new_wireframe(context, &vertices, &indices)
     } else {
-        format!("{}.png", name)
-    };
-    let texture_data = fs::load(texture_name).into_inner();
-    let texture = load_texture(&mut context.factory, &texture_data);
-    let (vertices, indices) = obj::build(model);
-    let mut mesh = Mesh::new(context, &vertices, &indices, texture);
-    mesh.is_wire = is_wire;
-    mesh
+        let texture_data = fs::load(format!("{}.png", name)).into_inner();
+        let texture = load_texture(&mut context.factory, &texture_data);
+        Mesh::new(context, &vertices, &indices, texture)
+    }
 }
 
 fn get_marker_mesh_id<'a>(mesh_ids: &'a MeshIdManager, player_id: &PlayerId) -> &'a MeshId {
