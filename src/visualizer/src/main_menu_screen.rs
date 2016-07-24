@@ -11,11 +11,12 @@ use gfx_gl;
 use screen::{Screen, ScreenCommand, EventStatus};
 use tactical_screen::{TacticalScreen};
 use core;
-use context::{Context, load_texture};
+use context::{Context, texture_from_bytes};
 use gui::{ButtonManager, Button, ButtonId, is_tap};
 use types::{ScreenPos};
 use ::{Vertex, pipe};
-use core::fs;
+// use core::fs;
+use text;
 
 pub struct MainMenuScreen {
     button_start_hotseat_id: ButtonId,
@@ -45,15 +46,20 @@ impl MainMenuScreen {
             &button_pos,
         ));
 
+        // TODO: убрать тестовую текстуру, когда все заработает
+        let label = "[click to start]";
+        let (w, h, texture_data) = text::text_to_texture(&context.font, 80.0, label);
+        let test_texture = texture_from_bytes(&mut context.factory, w, h, &texture_data);
         let index_data: &[u16] = &[0,  1,  2,  1,  2,  3];
+        let h = h as f32 / w as f32;
         let vertex_data = &[
-            Vertex{pos: [-0.5, -0.5, 0.0], uv: [0.0, 1.0]},
-            Vertex{pos: [-0.5, 0.5, 0.0], uv: [0.0, 0.0]},
-            Vertex{pos: [0.5, -0.5, 0.0], uv: [1.0, 1.0]},
-            Vertex{pos: [0.5, 0.5, 0.0], uv: [1.0, 0.0]},
+            Vertex{pos: [-1.0, 0.0, 0.0], uv: [0.0, 1.0]},
+            Vertex{pos: [-1.0, h * 2.0, 0.0], uv: [0.0, 0.0]},
+            Vertex{pos: [1.0, 0.0, 0.0], uv: [1.0, 1.0]},
+            Vertex{pos: [1.0, h * 2.0, 0.0], uv: [1.0, 0.0]},
         ];
-        let (vertex_buffer, slice) = context.factory.create_vertex_buffer_with_slice(vertex_data, index_data);
-        let test_texture = load_texture(&mut context.factory, &fs::load("tank.png").into_inner()); // TODO
+        let (vertex_buffer, slice) = context.factory
+            .create_vertex_buffer_with_slice(vertex_data, index_data);
 
         // мне нужна своя дата или надо кнтекстную менять?
         let mvp = Matrix4::identity();
@@ -132,14 +138,13 @@ impl MainMenuScreen {
 
 impl Screen for MainMenuScreen {
     fn tick(&mut self, context: &mut Context, _: u64) {
+        self.data.basic_color = [0.0, 0.0, 0.0, 1.0];
         {
             // TODO: временное нечто для проверки что что-то вообще работает
             context.clear_color = [0.2, 0.9, 0.2, 1.0];
             context.encoder.clear(&context.main_color, context.clear_color);
             context.encoder.draw(&self.slice, &context.pso, &self.data); // рисуем тестовое что-то там
         }
-        // self.data.basic_color = [0.0, 0.0, 0.0, 1.0]; // TODO: это для нормального текста
-        self.data.basic_color = [0.0, 0.0, 1.0, 1.0];
         self.button_manager.draw(context);
     }
 

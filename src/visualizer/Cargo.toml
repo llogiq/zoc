@@ -21,6 +21,7 @@ collision = "*"
 cgmath = "*"
 time = "*"
 rand = "*"
+rusttype = "*"
 
 [dependencies.image]
 version = "*"

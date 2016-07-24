@@ -10,6 +10,7 @@ use screen::{ScreenCommand};
 use types::{ScreenPos, /*Color4,*/ ColorFormat, SurfaceFormat};
 use ::{pipe};
 
+use rusttype;
 use image;
 use std::io::Cursor;
 use gfx::traits::{Factory, FactoryExt};
@@ -26,7 +27,16 @@ pub fn load_texture<R, F>(factory: &mut F, data: &[u8]) -> ShaderResourceView<R,
     let img = image::load(Cursor::new(data), image::PNG).unwrap().to_rgba();
     let (width, height) = img.dimensions();
     let kind = tex::Kind::D2(width as tex::Size, height as tex::Size, tex::AaMode::Single);
-    let (_, view) = factory.create_texture_const_u8::<ColorFormat>(kind, &[&img]).unwrap();
+    let t: &[u8] = &img.into_vec();
+    let (_, view) = factory.create_texture_const_u8::<ColorFormat>(kind, &[t]).unwrap();
+    view
+}
+
+pub fn texture_from_bytes<R, F>(factory: &mut F, w: u16, h: u16, data: &[u8]) -> ShaderResourceView<R, [f32; 4]>
+    where R: gfx::Resources, F: gfx::Factory<R>
+{
+    let kind = tex::Kind::D2(w as tex::Size, h as tex::Size, tex::AaMode::Single);
+    let (_, view) = factory.create_texture_const_u8::<ColorFormat>(kind, &[data]).unwrap();
     view
 }
 
@@ -87,11 +97,14 @@ pub struct Context {
     pub pso_wire: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
     pub sampler: gfx::handle::Sampler<gfx_gl::Resources>,
     pub factory: gfx_gl::Factory,
+    pub font: rusttype::Font<'static>,
 }
 
 impl Context {
     pub fn new(tx: Sender<ScreenCommand>) -> Context {
-
+        let font_data = fs::load("DroidSerif-Regular.ttf").into_inner();
+        let font: rusttype::Font<'static>
+             = rusttype::FontCollection::from_bytes(font_data).into_font().unwrap();
         let gl_version = GlRequest::GlThenGles {
             opengles_version: (2, 0),
             opengl_version: (2, 1),
@@ -128,6 +141,7 @@ impl Context {
             sampler: sampler,
             should_close: false,
             commands_tx: tx,
+            font: font,
             mouse: MouseState {
                 is_left_button_pressed: false,
                 is_right_button_pressed: false,

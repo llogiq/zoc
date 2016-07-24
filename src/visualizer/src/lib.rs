@@ -12,6 +12,7 @@ extern crate collision;
 extern crate glutin;
 extern crate core;
 extern crate image;
+extern crate rusttype;
 
 mod gui;
 mod obj;
@@ -29,6 +30,7 @@ mod context_menu_popup;
 mod main_menu_screen;
 // mod end_turn_screen;
 mod context;
+mod text;
 
 // TODO: убрать в честный модуль
 pub mod types {
