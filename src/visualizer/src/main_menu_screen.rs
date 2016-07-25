@@ -80,12 +80,6 @@ impl MainMenuScreen {
             {
                 context.add_command(ScreenCommand::PopScreen);
             },
-            // TODO: отладочная фигня, пока не заработают кнопки
-            glutin::VirtualKeyCode::Key1 => {
-                let core_options = Default::default();
-                let tactical_screen = Box::new(TacticalScreen::new(context, &core_options));
-                context.add_command(ScreenCommand::PushScreen(tactical_screen));
-            },
             _ => {},
         }
     }
