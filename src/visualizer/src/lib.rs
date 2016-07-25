@@ -164,8 +164,8 @@ impl Visualizer {
     fn draw(&mut self) {
         let dtime = self.update_time();
         self.context.clear_color = [0.8, 0.8, 0.8, 1.0];
-        self.context.encoder.clear(&self.context.main_color, self.context.clear_color);
-        self.context.encoder.clear_depth(&self.context.main_depth, 1.0);
+        self.context.encoder.clear(&self.context.data.out, self.context.clear_color);
+        self.context.encoder.clear_depth(&self.context.data.out_depth, 1.0);
         {
             let screen = self.screens.last_mut().unwrap();
             screen.tick(&mut self.context, dtime);

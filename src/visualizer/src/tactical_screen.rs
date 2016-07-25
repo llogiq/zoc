@@ -77,7 +77,7 @@ use unit_type_visual_info::{
 use selection::{SelectionManager, get_selection_mesh};
 use map_text::{MapTextManager};
 use context::{Context, load_texture};
-use ::{Vertex, pipe};
+use ::{Vertex};
 use core::fs;
 use geom;
 use screen::{Screen, ScreenCommand, EventStatus};
@@ -98,11 +98,12 @@ fn get_max_camera_pos(map_size: &Size2) -> WorldPos {
 
 pub type Texture = gfx::handle::ShaderResourceView<gfx_gl::Resources, [f32; 4]>;
 
+// TODO: поля-то публичные =\
 pub struct Mesh {
-    slice: gfx::Slice<gfx_gl::Resources>,
-    vertex_buffer: gfx::handle::Buffer<gfx_gl::Resources, Vertex>,
-    texture: Texture,
-    is_wire: bool,
+    pub slice: gfx::Slice<gfx_gl::Resources>,
+    pub vertex_buffer: gfx::handle::Buffer<gfx_gl::Resources, Vertex>,
+    pub texture: Texture,
+    pub is_wire: bool,
 }
 
 impl Mesh {
@@ -400,10 +401,6 @@ pub struct TacticalScreen {
     floor_tex_2: Texture,
     tx: Sender<context_menu_popup::Command>,
     rx: Receiver<context_menu_popup::Command>,
-
-    // TODO: эти надо будет удалить
-    slice: gfx::Slice<gfx_gl::Resources>,
-    data: pipe::Data<gfx_gl::Resources>,
 }
 
 impl TacticalScreen {
@@ -467,34 +464,6 @@ impl TacticalScreen {
         let map_text_manager = MapTextManager::new(/*&mut font_stash*/);
         let (tx, rx) = channel();
 
-        {
-            // TODO: просто что бы было
-            let obj = obj::Model::new(&format!("{}.obj", "tank"));
-            let _ = obj.is_wire();
-        }
-
-        let index_data: &[u16] = &[0,  1,  2,  1,  2,  3];
-        let vertex_data = &[
-            Vertex{pos: [-0.8, -0.8, 0.0], uv: [0.0, 1.0]},
-            Vertex{pos: [-0.8, 0.8, 0.0], uv: [0.0, 0.0]},
-            Vertex{pos: [0.8, -0.8, 0.0], uv: [1.0, 1.0]},
-            Vertex{pos: [0.8, 0.8, 0.0], uv: [1.0, 0.0]},
-        ];
-        let (vertex_buffer, slice) = context.factory.create_vertex_buffer_with_slice(
-            vertex_data, index_data);
-        let test_texture = load_texture(
-            &mut context.factory, &fs::load("tank.png").into_inner()); // TODO
-
-        // мне нужна своя дата или надо кнтекстную менять?
-        let data = pipe::Data {
-            basic_color: [1.0, 1.0, 1.0, 1.0],
-            vbuf: vertex_buffer.clone(),
-            texture: (test_texture, context.sampler.clone()),
-            out: context.main_color.clone(),
-            out_depth: context.main_depth.clone(),
-            mvp: camera.mat().into(),
-        };
-
         let mut screen = TacticalScreen {
             camera: camera,
             button_manager: button_manager,
@@ -520,8 +489,6 @@ impl TacticalScreen {
             floor_tex_2: floor_tex_2,
             tx: tx,
             rx: rx,
-            slice: slice,
-            data: data,
         };
         screen.add_map_objects();
         screen
@@ -937,16 +904,16 @@ impl TacticalScreen {
         if let Some(ref mesh_id) = node.mesh_id {
             let id = mesh_id.id as usize;
             let mesh = &self.meshes[id];
-            let mut data = self.data.clone(); // лишнее клонирование?
             // нужна матрица модели, хотя пока можно и mvp изуродовать
-            data.mvp = m.into();
-            data.texture.0 = mesh.texture.clone();
-            data.vbuf = mesh.vertex_buffer.clone();
+            context.data.mvp = m.into();
+            context.data.texture.0 = mesh.texture.clone();
+            context.data.vbuf = mesh.vertex_buffer.clone();
             if mesh.is_wire {
-                data.basic_color = [0.0, 0.0, 0.0, 1.0];
-                context.encoder.draw(&mesh.slice, &context.pso_wire, &data);
+                context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
+                context.encoder.draw(&mesh.slice, &context.pso_wire, &context.data);
             } else {
-                context.encoder.draw(&mesh.slice, &context.pso, &data);
+                context.data.basic_color = [1.0, 1.0, 1.0, 1.0];
+                context.encoder.draw(&mesh.slice, &context.pso, &context.data);
             }
         }
         for node in &node.children {
@@ -962,37 +929,36 @@ impl TacticalScreen {
     }
 
     fn draw_map(&mut self, context: &mut Context) {
-        self.data.mvp = self.camera.mat().into();
-        context.encoder.draw(&self.slice, &context.pso, &self.data); // рисуем тестовое что-то там
+        context.data.mvp = self.camera.mat().into();
         {
-            self.data.basic_color = [1.0, 1.0, 1.0, 1.0];
-            self.data.texture.0 = self.visible_map_mesh.texture.clone();
-            self.data.vbuf = self.visible_map_mesh.vertex_buffer.clone();
-            context.encoder.draw(&self.visible_map_mesh.slice, &context.pso, &self.data);
+            context.data.basic_color = [1.0, 1.0, 1.0, 1.0];
+            context.data.texture.0 = self.visible_map_mesh.texture.clone();
+            context.data.vbuf = self.visible_map_mesh.vertex_buffer.clone();
+            context.encoder.draw(&self.visible_map_mesh.slice, &context.pso, &context.data);
         }
         {
-            self.data.basic_color = [0.7, 0.7, 0.7, 1.0];
-            self.data.texture.0 = self.fow_map_mesh.texture.clone();
-            self.data.vbuf = self.fow_map_mesh.vertex_buffer.clone();
-            context.encoder.draw(&self.fow_map_mesh.slice, &context.pso, &self.data);
+            context.data.basic_color = [0.7, 0.7, 0.7, 1.0];
+            context.data.texture.0 = self.fow_map_mesh.texture.clone();
+            context.data.vbuf = self.fow_map_mesh.vertex_buffer.clone();
+            context.encoder.draw(&self.fow_map_mesh.slice, &context.pso, &context.data);
         }
     }
 
     fn draw_scene(&mut self, context: &mut Context, dtime: u64) {
-        self.data.basic_color = [1.0, 1.0, 1.0, 1.0];
+        context.data.basic_color = [1.0, 1.0, 1.0, 1.0];
         self.draw_scene_nodes(context);
         self.draw_map(context);
         if let Some(ref walkable_mesh) = self.walkable_mesh {
-            self.data.basic_color = [0.0, 0.0, 1.0, 1.0];
-            self.data.texture.0 = walkable_mesh.texture.clone();
-            self.data.vbuf = walkable_mesh.vertex_buffer.clone();
-            context.encoder.draw(&walkable_mesh.slice, &context.pso_wire, &self.data);
+            context.data.basic_color = [0.0, 0.0, 1.0, 1.0];
+            context.data.texture.0 = walkable_mesh.texture.clone();
+            context.data.vbuf = walkable_mesh.vertex_buffer.clone();
+            context.encoder.draw(&walkable_mesh.slice, &context.pso_wire, &context.data);
         }
         if let Some(ref targets_mesh) = self.targets_mesh {
-            self.data.basic_color = [1.0, 0.0, 0.0, 1.0];
-            self.data.texture.0 = targets_mesh.texture.clone();
-            self.data.vbuf = targets_mesh.vertex_buffer.clone();
-            context.encoder.draw(&targets_mesh.slice, &context.pso_wire, &self.data);
+            context.data.basic_color = [1.0, 0.0, 0.0, 1.0];
+            context.data.texture.0 = targets_mesh.texture.clone();
+            context.data.vbuf = targets_mesh.vertex_buffer.clone();
+            context.encoder.draw(&targets_mesh.slice, &context.pso_wire, &context.data);
         }
         if let Some(ref mut event_visualizer) = self.event_visualizer {
             let i = self.player_info.get_mut(self.core.player_id());
@@ -1004,10 +970,10 @@ impl TacticalScreen {
         {
             // TODO: временное нечто для проверки что что-то вообще работает
             context.clear_color = [0.7, 0.7, 0.7, 1.0];
-            context.encoder.clear(&context.main_color, context.clear_color);
+            context.encoder.clear(&context.data.out, context.clear_color);
         }
         self.draw_scene(context, dtime);
-        self.data.basic_color = [0.0, 0.0, 0.0, 1.0];
+        context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
         self.map_text_manager.draw(context, &self.camera, dtime);
         self.button_manager.draw(&context);
     }

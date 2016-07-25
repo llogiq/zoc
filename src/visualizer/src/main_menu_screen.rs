@@ -4,9 +4,6 @@ use std::default::{Default};
 use cgmath::{Vector2, Matrix4, SquareMatrix};
 use glutin::{self, Event, MouseButton, VirtualKeyCode};
 use glutin::ElementState::{Released};
-use gfx;
-use gfx::traits::{FactoryExt};
-use gfx_gl;
 // use zgl::{self, Time, ScreenPos};
 use screen::{Screen, ScreenCommand, EventStatus};
 use tactical_screen::{TacticalScreen};
@@ -14,16 +11,16 @@ use core;
 use context::{Context, texture_from_bytes};
 use gui::{ButtonManager, Button, ButtonId, is_tap};
 use types::{ScreenPos};
-use ::{Vertex, pipe};
+use ::{Vertex};
 // use core::fs;
 use text;
+use tactical_screen::{Mesh};
 
 pub struct MainMenuScreen {
     button_start_hotseat_id: ButtonId,
     button_start_vs_ai_id: ButtonId,
     button_manager: ButtonManager,
-    slice: gfx::Slice<gfx_gl::Resources>,
-    data: pipe::Data<gfx_gl::Resources>,
+    mesh: Mesh,
 }
 
 impl MainMenuScreen {
@@ -58,26 +55,12 @@ impl MainMenuScreen {
             Vertex{pos: [1.0, 0.0, 0.0], uv: [1.0, 1.0]},
             Vertex{pos: [1.0, h * 2.0, 0.0], uv: [1.0, 0.0]},
         ];
-        let (vertex_buffer, slice) = context.factory
-            .create_vertex_buffer_with_slice(vertex_data, index_data);
-
-        // мне нужна своя дата или надо кнтекстную менять?
-        let mvp = Matrix4::identity();
-        let data = pipe::Data {
-            basic_color: [1.0, 1.0, 1.0, 1.0],
-            vbuf: vertex_buffer.clone(),
-            texture: (test_texture, context.sampler.clone()),
-            out: context.main_color.clone(),
-            out_depth: context.main_depth.clone(),
-            mvp: mvp.into(),
-        };
-
+        let mesh = Mesh::new(context, vertex_data, index_data, test_texture);
         MainMenuScreen {
             button_manager: button_manager,
             button_start_hotseat_id: button_start_hotseat_id,
             button_start_vs_ai_id: button_start_vs_ai_id,
-            slice: slice,
-            data: data,
+            mesh: mesh,
         }
     }
 
@@ -138,12 +121,15 @@ impl MainMenuScreen {
 
 impl Screen for MainMenuScreen {
     fn tick(&mut self, context: &mut Context, _: u64) {
-        self.data.basic_color = [0.0, 0.0, 0.0, 1.0];
+        context.clear_color = [0.2, 0.9, 0.2, 1.0];
+        context.encoder.clear(&context.data.out, context.clear_color);
         {
             // TODO: временное нечто для проверки что что-то вообще работает
-            context.clear_color = [0.2, 0.9, 0.2, 1.0];
-            context.encoder.clear(&context.main_color, context.clear_color);
-            context.encoder.draw(&self.slice, &context.pso, &self.data); // рисуем тестовое что-то там
+            context.data.mvp = Matrix4::identity().into();
+            context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
+            context.data.texture.0 = self.mesh.texture.clone();
+            context.data.vbuf = self.mesh.vertex_buffer.clone();
+            context.encoder.draw(&self.mesh.slice, &context.pso, &context.data);
         }
         self.button_manager.draw(context);
     }

@@ -2,19 +2,19 @@
 
 use std::sync::mpsc::{Sender};
 // use std::path::{Path};
-use cgmath::{Vector2, Array};
+use cgmath::{Vector2, Matrix4, SquareMatrix, Array};
 use glutin::{self, Api, Event, MouseButton, GlRequest};
 use glutin::ElementState::{Pressed, Released};
 use core::types::{Size2, ZInt};
 use screen::{ScreenCommand};
-use types::{ScreenPos, /*Color4,*/ ColorFormat, SurfaceFormat};
+use types::{ScreenPos, /*Color4,*/ ColorFormat};
 use ::{pipe};
 
 use rusttype;
 use image;
 use std::io::Cursor;
 use gfx::traits::{Factory, FactoryExt};
-use gfx::handle::{RenderTargetView, DepthStencilView, ShaderResourceView};
+use gfx::handle::{ShaderResourceView};
 use gfx::{self, tex};
 use gfx_gl;
 use gfx_glutin;
@@ -79,29 +79,24 @@ pub struct MouseState {
 // TODO: make more fields private?
 pub struct Context {
     pub win_size: Size2,
-    // pub font_stash: FontStash,
     mouse: MouseState,
     should_close: bool,
     commands_tx: Sender<ScreenCommand>,
-
-    // ------
-
-    // TODO: все публичное, да?
     pub window: glutin::Window,
     pub clear_color: [f32; 4],
     pub device: gfx_gl::Device,
-    pub main_color: RenderTargetView<gfx_gl::Resources, (SurfaceFormat, gfx::format::Srgb)>,
-    pub main_depth: DepthStencilView<gfx_gl::Resources, (gfx::format::D24_S8, gfx::format::Unorm)>,
     pub encoder: gfx::Encoder<gfx_gl::Resources, gfx_gl::CommandBuffer>,
     pub pso: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
     pub pso_wire: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
     pub sampler: gfx::handle::Sampler<gfx_gl::Resources>,
     pub factory: gfx_gl::Factory,
     pub font: rusttype::Font<'static>,
+    pub data: pipe::Data<gfx_gl::Resources>, // TODO: rename to Pipeline?
 }
 
 impl Context {
     pub fn new(tx: Sender<ScreenCommand>) -> Context {
+        // TODO: read font name from config
         let font_data = fs::load("DroidSerif-Regular.ttf").into_inner();
         let font: rusttype::Font<'static>
              = rusttype::FontCollection::from_bytes(font_data).into_font().unwrap();
@@ -120,21 +115,25 @@ impl Context {
         let pso_wire = new_pso(&window, &mut factory, gfx::Primitive::LineList);
         let sampler = factory.create_sampler_linear();
         let win_size = get_win_size(&window);
-        // let font_size = 40.0;
-        // // TODO: read font name from config
-        // let font_stash = FontStash::new(
-        //     &zgl, &Path::new("DroidSerif-Regular.ttf"), font_size);
+        // fake mesh for pipeline initialization
+        let indices: &[u16] = &[];
+        let (vb, _) = factory.create_vertex_buffer_with_slice(&[], indices);
+        let fake_texture = texture_from_bytes(&mut factory, 2, 2, &[0; 4]);
+        let data = pipe::Data {
+            basic_color: [1.0, 1.0, 1.0, 1.0],
+            vbuf: vb,
+            texture: (fake_texture, sampler.clone()),
+            out: main_color,
+            out_depth: main_depth,
+            mvp: Matrix4::identity().into(),
+        };
         Context {
-            // window: window,
+            data: data,
             win_size: win_size,
-            // font_stash: font_stash,
-
             clear_color: [0.0, 0.0, 1.0, 1.0],
             window: window,
             device: device,
             factory: factory,
-            main_color: main_color,
-            main_depth: main_depth,
             encoder: encoder,
             pso: pso,
             pso_wire: pso_wire,
@@ -191,7 +190,15 @@ impl Context {
             },
             Event::Resized(w, h) => {
                 self.win_size = Size2{w: w as ZInt, h: h as ZInt};
-                // self.zgl.set_viewport(&self.win_size);
+                // TODO: нормально обрабатывать изменение размера окна
+                /*
+                gfx_window_glutin::update_views(
+                    &self.window,
+                    &mut self.main_color,
+                    &mut self.main_depth,
+                );
+                self.data.out = self.main_color.clone();
+                */
             },
             _ => {},
         }
