@@ -77,6 +77,7 @@ pub struct MouseState {
 }
 
 // TODO: make more fields private?
+// TODO: Избавиться от gfx_gl
 pub struct Context {
     pub win_size: Size2,
     mouse: MouseState,
