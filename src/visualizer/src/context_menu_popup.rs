@@ -85,6 +85,7 @@ impl ContextMenuPopup {
         let mut pos = pos.clone();
         // TODO: Simplify
         let baisc_text_size = basic_text_size(context);
+        // TODO: тут надо новой штукой текст отрисовать, иначе опции так и буду ехать
         // let (_, test_text_size) = context.font_stash
         //     .get_text_size(&context.zgl, "X");
         let test_text_size = Size2{w: 10, h: 10};
@@ -229,10 +230,7 @@ impl ContextMenuPopup {
 
 impl Screen for ContextMenuPopup {
     fn tick(&mut self, context: &mut Context, _: u64) {
-        // TODO: а вот это не заработает, пока
-        // я не вынесу data из экранов в контекст.
-        // А почему бы и нет? Все равно я там почти все поля переприсваиваю каждый раз.
-        // context.set_basic_color(&::BLACK);
+        context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
         self.button_manager.draw(context);
     }
 
