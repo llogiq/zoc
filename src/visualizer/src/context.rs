@@ -190,15 +190,11 @@ impl Context {
             },
             Event::Resized(w, h) => {
                 self.win_size = Size2{w: w as ZInt, h: h as ZInt};
-                // TODO: нормально обрабатывать изменение размера окна
-                /*
-                gfx_window_glutin::update_views(
+                gfx_glutin::update_views(
                     &self.window,
-                    &mut self.main_color,
-                    &mut self.main_depth,
+                    &mut self.data.out,
+                    &mut self.data.out_depth,
                 );
-                self.data.out = self.main_color.clone();
-                */
             },
             _ => {},
         }
