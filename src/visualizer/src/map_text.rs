@@ -1,26 +1,25 @@
 // See LICENSE file for copyright and license details.
 
 use std::collections::{HashMap, VecDeque};
+use cgmath::{Matrix4, Matrix3};
 use core::types::{ZInt, /*ZFloat*/};
 use core::{MapPos};
-// use zgl::{Zgl};
-// use zgl::mesh::{Mesh};
 use camera::Camera;
-// use zgl::font_stash::{FontStash};
 use geom;
 use move_helper::{MoveHelper};
-use context::{Context};
+use context::{Context, texture_from_bytes};
+use tactical_screen::{Mesh};
+use text;
+use ::{Vertex};
 
 struct ShowTextCommand {
     pos: MapPos,
-
-    #[allow(dead_code)] // TODO
     text: String,
 }
 
 struct MapText {
     move_helper: MoveHelper,
-    // mesh: Mesh,
+    mesh: Mesh,
     pos: MapPos,
 }
 
@@ -59,7 +58,7 @@ impl MapTextManager {
         true
     }
 
-    pub fn do_commands(&mut self, _context: &Context, /*font_stash: &mut FontStash*/) {
+    pub fn do_commands(&mut self, context: &mut Context) {
         let mut postponed_commands = Vec::new();
         while !self.commands.is_empty() {
             let command = self.commands.pop_front()
@@ -71,10 +70,25 @@ impl MapTextManager {
             let from = geom::map_pos_to_world_pos(&command.pos);
             let mut to = from.clone();
             to.v.z += 2.0;
-            // let mesh = font_stash.get_mesh(zgl, &command.text, 1.0, true);
+            let mesh = {
+                let (w, h, texture_data) = text::text_to_texture(&context.font, 80.0, &command.text);
+                let texture = texture_from_bytes(&mut context.factory, w, h, &texture_data);
+                let scale_factor = 200.0; // TODO: take camera zoom into account
+                let h_2 = (h as f32 / scale_factor) / 2.0;
+                let w_2 = (w as f32 / scale_factor) / 2.0;
+                let vertices = &[
+                    Vertex{pos: [-w_2, -h_2, 0.0], uv: [0.0, 1.0]},
+                    Vertex{pos: [-w_2, h_2, 0.0], uv: [0.0, 0.0]},
+                    Vertex{pos: [w_2, -h_2, 0.0], uv: [1.0, 1.0]},
+                    Vertex{pos: [w_2, h_2, 0.0], uv: [1.0, 0.0]},
+                ];
+                let indices: &[u16] = &[0,  1,  2,  1,  2,  3];
+                let mesh = Mesh::new(context, vertices, indices, texture);
+                mesh
+            };
             self.visible_labels_list.insert(self.last_label_id, MapText {
                 pos: command.pos.clone(),
-                // mesh: mesh,
+                mesh: mesh,
                 move_helper: MoveHelper::new(&from, &to, 1.0),
             });
             self.last_label_id += 1;
@@ -97,24 +111,23 @@ impl MapTextManager {
     pub fn draw(
         &mut self,
         context: &mut Context,
-        _camera: &Camera,
+        camera: &Camera,
         dtime: u64,
     ) {
-        self.do_commands(context/*, &mut context.font_stash*/);
+        self.do_commands(context);
         // TODO: I'm not sure that disabling depth test is correct solution
         // context.zgl.set_depth_test(false);
-        for (_, map_text) in self.visible_labels_list.iter_mut() {
-            let _pos = map_text.move_helper.step(dtime);
-            /*
-            let m = camera.mat(&context.zgl);
-            let m = context.zgl.tr(m, &pos.v);
-            let m = context.zgl.scale(m, self.scale);
-            let m = context.zgl.rot_z(m, camera.get_z_angle());
-            let m = context.zgl.rot_x(m, camera.get_x_angle());
-            context.shader.set_uniform_mat4f(
-                &context.zgl, context.shader.get_mvp_mat(), &m);
-            map_text.mesh.draw(&context.zgl, &context.shader);
-            */
+        let rot_z_mat = Matrix4::from(Matrix3::from_angle_z(camera.get_z_angle()));
+        let rot_x_mat = Matrix4::from(Matrix3::from_angle_x(camera.get_x_angle()));
+        context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
+        for (_, map_text) in &mut self.visible_labels_list {
+            let pos = map_text.move_helper.step(dtime);
+            let tr_mat = Matrix4::from_translation(pos.v);
+            let mvp = camera.mat() * tr_mat * rot_z_mat * rot_x_mat;
+            context.data.mvp = mvp.into();
+            context.data.texture.0 = map_text.mesh.texture.clone();
+            context.data.vbuf = map_text.mesh.vertex_buffer.clone();
+            context.encoder.draw(&map_text.mesh.slice, &context.pso, &context.data);
         }
         // context.zgl.set_depth_test(true);
         self.delete_old();

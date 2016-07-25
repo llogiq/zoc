@@ -79,15 +79,13 @@ impl Camera {
         self.zoom = clamp(self.zoom, 10.0, 40.0);
     }
 
-    /*
-    pub fn get_z_angle(&self) -> &Rad<ZFloat> {
-        &self.z_angle
+    pub fn get_z_angle(&self) -> Rad<ZFloat> {
+        self.z_angle
     }
 
-    pub fn get_x_angle(&self) -> &Rad<ZFloat> {
-        &self.x_angle
+    pub fn get_x_angle(&self) -> Rad<ZFloat> {
+        self.x_angle
     }
-    */
 
     // TODO: rename to 'move'
     pub fn move_camera(&mut self, angle: Rad<ZFloat>, speed: ZFloat) {
