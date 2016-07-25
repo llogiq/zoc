@@ -82,8 +82,8 @@ use core::fs;
 use geom;
 use screen::{Screen, ScreenCommand, EventStatus};
 use context_menu_popup::{self, ContextMenuPopup};
-// use end_turn_screen::{EndTurnScreen};
-use types::{ScreenPos, WorldPos, MeshId, /*VertexCoord, TextureCoord*/};
+use end_turn_screen::{EndTurnScreen};
+use types::{ScreenPos, WorldPos, MeshId};
 
 fn get_initial_camera_pos(map_size: &Size2) -> WorldPos {
     let pos = get_max_camera_pos(map_size);
@@ -560,11 +560,11 @@ impl TacticalScreen {
         }
     }
 
-    fn end_turn(&mut self, _context: &mut Context) {
+    fn end_turn(&mut self, context: &mut Context) {
         if self.player_info.info.len() > 1 {
-            let _next_id = self.core.next_player_id(self.core.player_id());
-            // let screen = Box::new(EndTurnScreen::new(context, &next_id));
-            // context.add_command(ScreenCommand::PushScreen(screen));
+            let next_id = self.core.next_player_id(self.core.player_id());
+            let screen = Box::new(EndTurnScreen::new(context, &next_id));
+            context.add_command(ScreenCommand::PushScreen(screen));
         }
         self.deselect_unit();
         self.core.do_command(Command::EndTurn);
@@ -975,7 +975,7 @@ impl TacticalScreen {
         self.draw_scene(context, dtime);
         context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
         self.map_text_manager.draw(context, &self.camera, dtime);
-        self.button_manager.draw(&context);
+        self.button_manager.draw(context);
     }
 
     fn pick_tile(&mut self, context: &Context) -> Option<MapPos> {

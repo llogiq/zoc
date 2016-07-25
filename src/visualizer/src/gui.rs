@@ -1,14 +1,13 @@
 // See LICENSE file for copyright and license details.
 
 use std::collections::{HashMap};
-use cgmath::{Vector3};
+use cgmath::{Vector3, Matrix4, /*SquareMatrix,*/ ortho};
 use core::types::{ZInt, Size2, ZFloat};
-// use zgl::types::{ScreenPos};
-// use zgl::shader::{Shader};
-// use zgl::mesh::{Mesh};
-// use zgl::{Zgl};
-use context::{Context};
+use context::{Context, texture_from_bytes};
 use types::{ScreenPos};
+use text;
+use tactical_screen::{Mesh};
+use ::{Vertex};
 
 /// Check if this was a tap or swipe
 pub fn is_tap(context: &Context) -> bool {
@@ -24,34 +23,56 @@ pub fn basic_text_size(context: &Context) -> ZFloat {
     (context.win_size.h as ZFloat) / 400.0 // TODO: magic num
 }
 
+pub fn get_2d_screen_matrix(win_size: &Size2) -> Matrix4<ZFloat> {
+    let left = 0.0;
+    let right = win_size.w as ZFloat;
+    let bottom = 0.0;
+    let top = win_size.h as ZFloat;
+    let near = -1.0;
+    let far = 1.0;
+    ortho(left, right, bottom, top, near, far)
+}
+
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct ButtonId {pub id: ZInt}
 
 pub struct Button {
     pos: ScreenPos,
     size: Size2,
-    // mesh: Mesh,
+    mesh: Mesh,
 }
 
 impl Button {
-    pub fn new(context: &mut Context, /*label*/_: &str, pos: &ScreenPos) -> Button {
-        let _/*text_size*/ = basic_text_size(context);
-        // let (_, size) = context.font_stash.get_text_size(&context.zgl, label);
+    pub fn new(context: &mut Context, label: &str, pos: &ScreenPos) -> Button {
+        let (w, h, texture_data) = text::text_to_texture(&context.font, 12.0, label);
+        let texture = texture_from_bytes(&mut context.factory, w, h, &texture_data);
+        let h = h as f32;
+        let w = w as f32;
+        let vertices = &[
+            Vertex{pos: [0.0, 0.0, 0.0], uv: [0.0, 1.0]},
+            Vertex{pos: [0.0, h, 0.0], uv: [0.0, 0.0]},
+            Vertex{pos: [w, 0.0, 0.0], uv: [1.0, 1.0]},
+            Vertex{pos: [w, h, 0.0], uv: [1.0, 0.0]},
+        ];
+        let indices: &[u16] = &[0,  1,  2,  1,  2,  3];
+        let mesh = Mesh::new(context, vertices, indices, texture);
         Button {
             pos: pos.clone(),
             size: Size2 {
                 // w: (size.w as ZFloat * text_size) as ZInt,
                 // h: (size.h as ZFloat * text_size) as ZInt,
-                w: 100,
-                h: 50,
+                w: w as ZInt,
+                h: h as ZInt,
             },
-            // mesh: context.font_stash.get_mesh(&context.zgl, label, text_size, false),
+            mesh: mesh,
         }
     }
 
-    // pub fn draw(&self, /*zgl: &Zgl, shader: &Shader*/) {
-    //     // self.mesh.draw(zgl, shader);
-    // }
+    pub fn draw(&self, context: &mut Context) {
+        context.data.texture.0 = self.mesh.texture.clone();
+        context.data.vbuf = self.mesh.vertex_buffer.clone();
+        context.encoder.draw(&self.mesh.slice, &context.pso, &context.data);
+    }
 
     pub fn pos(&self) -> &ScreenPos {
         &self.pos
@@ -101,19 +122,16 @@ impl ButtonManager {
         None
     }
 
-    pub fn draw(&self, /*context*/ _: &Context) {
-        // let m = context.zgl.get_2d_screen_matrix(&context.win_size);
+    pub fn draw(&self, context: &mut Context) {
+        let proj_mat = get_2d_screen_matrix(&context.win_size);
         for (_, button) in self.buttons() {
-            let /*text_offset*/ _ = Vector3 {
+            let tr_mat = Matrix4::from_translation(Vector3 {
                 x: button.pos().v.x as ZFloat,
                 y: button.pos().v.y as ZFloat,
                 z: 0.0,
-            };
-            // context.shader.set_uniform_mat4f(
-            //     &context.zgl,
-            //     context.shader.get_mvp_mat(),
-            //     &context.zgl.tr(m, &text_offset));
-            // button.draw(&context.zgl, &context.shader);
+            });
+            context.data.mvp = (proj_mat * tr_mat).into();
+            button.draw(context);
         }
     }
 }
