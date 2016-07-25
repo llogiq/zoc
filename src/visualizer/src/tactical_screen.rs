@@ -967,11 +967,8 @@ impl TacticalScreen {
     }
 
     fn draw(&mut self, context: &mut Context, dtime: u64) {
-        {
-            // TODO: временное нечто для проверки что что-то вообще работает
-            context.clear_color = [0.7, 0.7, 0.7, 1.0];
-            context.encoder.clear(&context.data.out, context.clear_color);
-        }
+        context.clear_color = [0.7, 0.7, 0.7, 1.0];
+        context.encoder.clear(&context.data.out, context.clear_color);
         self.draw_scene(context, dtime);
         context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
         self.map_text_manager.draw(context, &self.camera, dtime);
