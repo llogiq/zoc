@@ -4,7 +4,7 @@ use std::sync::mpsc::{Sender};
 use std::collections::{HashMap};
 use glutin::{self, Event, MouseButton, VirtualKeyCode};
 use glutin::ElementState::{Released};
-use core::types::{ZInt, ZFloat, Size2};
+use core::types::{ZInt};
 use types::{ScreenPos};
 use screen::{Screen, ScreenCommand, EventStatus};
 use context::{Context};
@@ -83,15 +83,10 @@ impl ContextMenuPopup {
         let mut enable_reaction_fire_button_id = None;
         let mut disable_reaction_fire_button_id = None;
         let mut pos = pos.clone();
-        // TODO: Simplify
-        let baisc_text_size = basic_text_size(context);
-        // TODO: тут надо новой штукой текст отрисовать, иначе опции так и буду ехать
-        // let (_, test_text_size) = context.font_stash
-        //     .get_text_size(&context.zgl, "X");
-        let test_text_size = Size2{w: 10, h: 10};
-        pos.v.y -= test_text_size.h * baisc_text_size as ZInt / 2;
-        pos.v.x -= test_text_size.w * baisc_text_size as ZInt / 2;
-        let vstep = (test_text_size.h as ZFloat * baisc_text_size * 1.2) as ZInt;
+        let text_size = basic_text_size(context);
+        pos.v.y -= text_size as ZInt / 2;
+        pos.v.x -= text_size as ZInt / 2;
+        let vstep = (text_size * 0.9) as ZInt;
         for unit_id in &options.selects {
             let button_id = button_manager.add_button(
                 Button::new(context, &format!("select <{}>", unit_id.id), &pos));

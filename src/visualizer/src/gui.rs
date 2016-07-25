@@ -20,7 +20,9 @@ pub fn is_tap(context: &Context) -> bool {
 }
 
 pub fn basic_text_size(context: &Context) -> ZFloat {
-    (context.win_size.h as ZFloat) / 400.0 // TODO: magic num
+    // TODO: use different value for android
+    let lines_per_screen_h = 12.0;
+    (context.win_size.h as ZFloat) / lines_per_screen_h
 }
 
 pub fn get_2d_screen_matrix(win_size: &Size2) -> Matrix4<ZFloat> {
@@ -44,7 +46,8 @@ pub struct Button {
 
 impl Button {
     pub fn new(context: &mut Context, label: &str, pos: &ScreenPos) -> Button {
-        let (w, h, texture_data) = text::text_to_texture(&context.font, 12.0, label);
+        let text_size = basic_text_size(context);
+        let (w, h, texture_data) = text::text_to_texture(&context.font, text_size, label);
         let texture = texture_from_bytes(&mut context.factory, w, h, &texture_data);
         let h = h as f32;
         let w = w as f32;
@@ -54,16 +57,11 @@ impl Button {
             Vertex{pos: [w, 0.0, 0.0], uv: [1.0, 1.0]},
             Vertex{pos: [w, h, 0.0], uv: [1.0, 0.0]},
         ];
-        let indices: &[u16] = &[0,  1,  2,  1,  2,  3];
+        let indices = &[0,  1,  2,  1,  2,  3];
         let mesh = Mesh::new(context, vertices, indices, texture);
         Button {
             pos: pos.clone(),
-            size: Size2 {
-                // w: (size.w as ZFloat * text_size) as ZInt,
-                // h: (size.h as ZFloat * text_size) as ZInt,
-                w: w as ZInt,
-                h: h as ZInt,
-            },
+            size: Size2{w: w as ZInt, h: h as ZInt},
             mesh: mesh,
         }
     }
