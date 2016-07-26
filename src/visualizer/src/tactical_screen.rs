@@ -892,8 +892,7 @@ impl TacticalScreen {
         if let Some(ref mesh_id) = node.mesh_id {
             let id = mesh_id.id as usize;
             let mesh = &self.meshes[id];
-            // нужна матрица модели, хотя пока можно и mvp изуродовать
-            context.data.mvp = m.into();
+            context.data.mvp = m.into(); // TODO: use separate model matrix
             context.data.texture.0 = mesh.texture.clone();
             context.data.vbuf = mesh.vertex_buffer.clone();
             if mesh.is_wire {
