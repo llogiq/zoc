@@ -5,23 +5,25 @@ use std::fmt::{Debug};
 use std::io::{BufRead};
 use std::path::{Path};
 use std::str::{SplitWhitespace, Split, FromStr};
-use cgmath::{Vector3, Vector2};
 use core::types::{ZFloat};
 use core::fs;
-use types::{VertexCoord, TextureCoord};
 use ::{Vertex};
+
+type Face = [[u16; 3]; 3];
 
 struct Line {
     vertex: [u16; 2],
 }
 
-type Face = [[u16; 3]; 3];
+type Uv = [f32; 2];
+
+type Pos = [f32; 3];
 
 pub struct Model {
-    coords: Vec<VertexCoord>,
-    uvs: Vec<TextureCoord>,
     faces: Vec<Face>,
     lines: Vec<Line>,
+    uvs: Vec<Uv>,
+    positions: Vec<Pos>,
 }
 
 fn parse_word<T: FromStr>(words: &mut SplitWhitespace) -> T
@@ -41,7 +43,7 @@ fn parse_charsplit<T: FromStr>(words: &mut Split<char>) -> T
 impl Model {
     pub fn new<P: AsRef<Path>>(path: P) -> Model {
         let mut obj = Model {
-            coords: Vec::new(),
+            positions: Vec::new(),
             uvs: Vec::new(),
             faces: Vec::new(),
             lines: Vec::new(),
@@ -50,23 +52,19 @@ impl Model {
         obj
     }
 
-    fn read_v(words: &mut SplitWhitespace) -> VertexCoord {
-        VertexCoord{v: Vector3 {
-            x: parse_word(words),
-            // y: parse_word(words), // TODO: flip models
-            y: -parse_word::<ZFloat>(words),
-            z: parse_word(words),
-        }}
+    fn read_v(words: &mut SplitWhitespace) -> Pos {
+        // TODO: flip models
+        [parse_word(words), -parse_word::<ZFloat>(words), parse_word(words)]
     }
 
-    fn read_vt(words: &mut SplitWhitespace) -> TextureCoord {
-        TextureCoord{v: Vector2 {
-            x: parse_word(words),
-            y: 1.0 - parse_word::<ZFloat>(words), // flip
-        }}
+    fn read_vt(words: &mut SplitWhitespace) -> Uv {
+        [
+            parse_word(words),
+            1.0 - parse_word::<ZFloat>(words), // flip
+        ]
     }
 
-    fn read_f(words: &mut SplitWhitespace) -> [[u16; 3]; 3] {
+    fn read_f(words: &mut SplitWhitespace) -> Face {
         let mut f = [[0; 3]; 3];
         for (i, group) in words.by_ref().enumerate() {
             let w = &mut group.split('/');
@@ -97,7 +95,7 @@ impl Model {
             Some(tag) if is_correct_tag(tag) => {
                 let w = &mut words;
                 match tag {
-                    "v" => self.coords.push(Model::read_v(w)),
+                    "v" => self.positions.push(Model::read_v(w)),
                     "vn" => {},
                     "vt" => self.uvs.push(Model::read_vt(w)),
                     "f" => self.faces.push(Model::read_f(w)),
@@ -127,35 +125,34 @@ impl Model {
     }
 }
 
-// TODO: упростить
 pub fn build(model: &Model) -> (Vec<Vertex>, Vec<u16>) {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
-    let mut h: HashMap<(u16, u16), u16> = HashMap::new();
-    for f in &model.faces {
-        for v in f {
-            let pos_id = v[0] - 1;
-            let uv_id = v[1] - 1;
+    let mut components_map: HashMap<(u16, u16), u16> = HashMap::new();
+    for face in &model.faces {
+        for face_vertex in face {
+            let pos_id = face_vertex[0] - 1;
+            let uv_id = face_vertex[1] - 1;
             let key = (pos_id, uv_id);
-            let id = if h.contains_key(&key) {
-                *h.get(&key).unwrap()
+            let id = if components_map.contains_key(&key) {
+                *components_map.get(&key).unwrap()
             } else {
                 let id = vertices.len() as u16;
                 vertices.push(Vertex {
-                    pos: model.coords[pos_id as usize].v.into(),
-                    uv: model.uvs[uv_id as usize].v.into(),
+                    pos: model.positions[pos_id as usize],
+                    uv: model.uvs[uv_id as usize],
                 });
-                h.insert(key, id);
+                components_map.insert(key, id);
                 id
             };
             indices.push(id);
         }
     }
     for line in &model.lines {
-        for v in line.vertex.iter() {
-            let vertex_id = *v as usize - 1;
+        for line_vertex in &line.vertex {
+            let pos_id = *line_vertex as usize - 1;
             vertices.push(Vertex {
-                pos: model.coords[vertex_id].v.into(),
+                pos: model.positions[pos_id],
                 uv: [0.0, 0.0],
             });
             indices.push(vertices.len() as u16 - 1);
