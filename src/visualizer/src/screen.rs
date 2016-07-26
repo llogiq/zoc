@@ -5,13 +5,8 @@ use context::{Context};
 
 pub enum ScreenCommand {
     PopScreen,
-
-    #[allow(dead_code)] // TODO
     PopPopup,
-
     PushScreen(Box<Screen>),
-
-    #[allow(dead_code)] // TODO
     PushPopup(Box<Screen>),
 }
 
