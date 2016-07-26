@@ -218,8 +218,9 @@ impl EventAttackUnitVisualizer {
                 mesh_id: Some(shell_mesh_id.clone()),
                 children: Vec::new(),
             }));
+            let shell_speed = 10.0;
             shell_move = Some(MoveHelper::new(
-                &attacker_pos, &defender_pos, 10.0)); // TODO: remove magic number
+                &attacker_pos, &defender_pos, shell_speed));
         }
         if attack_info.is_ambush {
             map_text.add_text(&defender.pos, "Ambushed");
