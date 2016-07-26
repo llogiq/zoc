@@ -208,7 +208,7 @@ impl Visualizer {
                     self.popups.push(popup);
                 },
                 ScreenCommand::PopScreen => {
-                    let _ = self.screens.pop();
+                    self.screens.pop().unwrap();
                     if self.screens.is_empty() {
                         self.should_close = true;
                     }
