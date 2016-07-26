@@ -55,10 +55,6 @@ pub mod types {
 
     // его надо убить
     #[derive(Copy, Clone)]
-    pub struct Normal{pub v: Vector3<ZFloat>}
-
-    // его надо убить
-    #[derive(Copy, Clone)]
     pub struct TextureCoord{pub v: Vector2<ZFloat>}
 
     #[derive(Copy, Clone)]
