@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, VecDeque};
 use cgmath::{Matrix4, Matrix3};
-use core::types::{ZInt, /*ZFloat*/};
+use core::types::{ZInt};
 use core::{MapPos};
 use camera::Camera;
 use geom;
@@ -26,16 +26,14 @@ struct MapText {
 pub struct MapTextManager {
     commands: VecDeque<ShowTextCommand>,
     visible_labels_list: HashMap<ZInt, MapText>,
-    // scale: ZFloat,
     last_label_id: ZInt, // TODO: think about better way of deleting old labels
 }
 
 impl MapTextManager {
-    pub fn new(/*font_stash: &mut FontStash*/) -> Self {
+    pub fn new() -> Self {
         MapTextManager {
             commands: VecDeque::new(),
             visible_labels_list: HashMap::new(),
-            // scale: 0.5 / font_stash.get_size(),
             last_label_id: 0,
         }
     }
@@ -115,8 +113,6 @@ impl MapTextManager {
         dtime: u64,
     ) {
         self.do_commands(context);
-        // TODO: I'm not sure that disabling depth test is correct solution
-        // context.zgl.set_depth_test(false);
         let rot_z_mat = Matrix4::from(Matrix3::from_angle_z(camera.get_z_angle()));
         let rot_x_mat = Matrix4::from(Matrix3::from_angle_x(camera.get_x_angle()));
         context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
@@ -129,7 +125,6 @@ impl MapTextManager {
             context.data.vbuf = map_text.mesh.vertex_buffer.clone();
             context.encoder.draw(&map_text.mesh.slice, &context.pso, &context.data);
         }
-        // context.zgl.set_depth_test(true);
         self.delete_old();
     }
 }

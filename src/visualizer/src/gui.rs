@@ -1,7 +1,7 @@
 // See LICENSE file for copyright and license details.
 
 use std::collections::{HashMap};
-use cgmath::{Vector3, Matrix4, /*SquareMatrix,*/ ortho};
+use cgmath::{Vector3, Matrix4, ortho};
 use core::types::{ZInt, Size2, ZFloat};
 use context::{Context, texture_from_bytes};
 use types::{ScreenPos};

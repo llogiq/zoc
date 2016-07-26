@@ -9,7 +9,6 @@ use core::game_state::{GameState};
 use core::{self, UnitInfo, AttackInfo, ReactionFireMode, UnitId, ExactPos};
 use core::unit::{UnitTypeId};
 use core::db::{Db};
-// use zgl::mesh::{MeshId};
 use ::types::{MeshId, WorldPos};
 use geom;
 use scene::{Scene, SceneNode, NodeId};

@@ -24,9 +24,6 @@ use gfx;
 use gfx::traits::{FactoryExt};
 use gfx_gl;
 use core::types::{Size2, ZInt, ZFloat};
-// use zgl::types::{ScreenPos, VertexCoord, TextureCoord, Time, WorldPos};
-// use zgl::{self, Zgl, MeshRenderMode};
-// use zgl::mesh::{Mesh, MeshId};
 use core::map::{Map, Terrain, spiral_iter};
 use core::dir::{Dir, dirs};
 use core::partial_state::{PartialState};
@@ -52,9 +49,7 @@ use core::{
     get_free_exact_pos,
 };
 use core::db::{Db};
-// use zgl::texture::{Texture};
 use obj;
-// use zgl::font_stash::{FontStash};
 use camera::Camera;
 use gui::{ButtonManager, Button, ButtonId, is_tap};
 use scene::{Scene, SceneNode};
@@ -408,9 +403,8 @@ impl TacticalScreen {
         let core = Core::new(core_options);
         let map_size = core.map_size().clone();
         let player_info = PlayerInfoManager::new(&map_size, core_options);
-        let floor_tex = load_texture(&mut context.factory, &fs::load("floor.png").into_inner()); // TODO: floor.png
-        let floor_tex_2 = load_texture(&mut context.factory, &fs::load("dark_floor.png").into_inner()); // TODO: floor.png
-        // let floor_tex = Texture::new(&context.zgl, "floor.png"); // TODO: !!!
+        let floor_tex = load_texture(&mut context.factory, &fs::load("floor.png").into_inner());
+        let floor_tex_2 = load_texture(&mut context.factory, &fs::load("dark_floor.png").into_inner());
         let mut meshes = Vec::new();
         let visible_map_mesh = generate_visible_tiles_mesh(
             context, &player_info.get(core.player_id()).game_state, floor_tex.clone());
@@ -435,11 +429,6 @@ impl TacticalScreen {
         let mut camera = Camera::new(&context.win_size);
         camera.set_max_pos(get_max_camera_pos(&map_size));
         camera.set_pos(get_initial_camera_pos(&map_size)); // TODO
-        /*
-        let font_size = 40.0;
-        let mut font_stash = FontStash::new(
-            &context.zgl, "DroidSerif-Regular.ttf", font_size);
-        */
         let mut button_manager = ButtonManager::new();
         let mut pos = ScreenPos{v: Vector2{x: 10, y: 10}};
         let button_end_turn_id = button_manager.add_button(
@@ -461,9 +450,8 @@ impl TacticalScreen {
             marker_1_mesh_id: marker_1_mesh_id,
             marker_2_mesh_id: marker_2_mesh_id,
         };
-        let map_text_manager = MapTextManager::new(/*&mut font_stash*/);
+        let map_text_manager = MapTextManager::new();
         let (tx, rx) = channel();
-
         let mut screen = TacticalScreen {
             camera: camera,
             button_manager: button_manager,

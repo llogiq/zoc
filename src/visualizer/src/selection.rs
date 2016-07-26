@@ -1,6 +1,6 @@
 // See LICENSE file for copyright and license details.
 
-use cgmath::{/*Vector2,*/ rad};
+use cgmath::{rad};
 use core::{fs, UnitId};
 use core::partial_state::{PartialState};
 use core::game_state::{GameState};
