@@ -7,7 +7,7 @@ use glutin::{self, Api, Event, MouseButton, GlRequest};
 use glutin::ElementState::{Pressed, Released};
 use core::types::{Size2, ZInt};
 use screen::{ScreenCommand};
-use types::{ScreenPos, Color4, ColorFormat};
+use types::{ScreenPos, ColorFormat};
 use ::{pipe};
 
 use rusttype;
@@ -160,9 +160,11 @@ impl Context {
     }
 
     // TODO: использовать этот метод везде вместо прямого изменения поля
-    pub fn set_basic_color(&mut self, color: &Color4) {
-        self.data.basic_color = [color.r, color.g, color.b, color.a];
+    /*
+    pub fn set_basic_color(&mut self, color: [f32; 4]) {
+        self.data.basic_color = color;
     }
+    */
 
     pub fn add_command(&mut self, command: ScreenCommand) {
         self.commands_tx.send(command)

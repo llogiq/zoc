@@ -58,21 +58,6 @@ pub mod types {
 
     // это надо вынести в какой-то отдельный модуль
     #[derive(Copy, Clone)]
-    pub struct Color3 {
-        pub r: ZFloat,
-        pub g: ZFloat,
-        pub b: ZFloat,
-    }
-
-    #[derive(Copy, Clone)]
-    pub struct Color4 {
-        pub r: ZFloat,
-        pub g: ZFloat,
-        pub b: ZFloat,
-        pub a: ZFloat,
-    }
-
-    #[derive(Copy, Clone)]
     pub struct WorldPos{pub v: Vector3<ZFloat>}
 
     // его надо убить
@@ -97,17 +82,6 @@ pub mod types {
     pub struct MeshId{pub id: ZInt}
 }
 
-use types::{Color3, Color4};
-
-// pub const GREY_3: Color3 = Color3{r: 0.3, g: 0.3, b: 0.3};
-pub const BLACK_3: Color3 = Color3{r: 0.0, g: 0.0, b: 0.0};
-pub const WHITE: Color4 = Color4{r: 1.0, g: 1.0, b: 1.0, a: 1.0};
-pub const BLUE: Color4 = Color4{r: 0.0, g: 0.0, b: 1.0, a: 1.0};
-pub const RED: Color4 = Color4{r: 1.0, g: 0.0, b: 0.0, a: 1.0};
-pub const BLACK: Color4 = Color4{r: 0.0, g: 0.0, b: 0.0, a: 1.0};
-pub const GREY: Color4 = Color4{r: 0.7, g: 0.7, b: 0.7, a: 1.0};
-
-// use common::fs;
 use std::sync::mpsc::{channel, Receiver};
 use screen::{Screen, ScreenCommand, EventStatus};
 use context::{Context};
