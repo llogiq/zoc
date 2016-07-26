@@ -45,17 +45,6 @@ pub mod types {
     pub type SurfaceFormat = gfx::format::R8_G8_B8_A8;
     pub type FullFormat = (SurfaceFormat, gfx::format::Unorm);
 
-    // // TODO: тоже спрятать в отдельный модуль, misc или что такое
-    // // Или оно вообще нафиг не нужно, раз у меня теперь везде индексы?
-    // pub fn add_quad_to_vec<T: Clone>(v: &mut Vec<T>, v1: T, v2: T, v3: T, v4: T) {
-    //     v.push(v1.clone());
-    //     v.push(v2);
-    //     v.push(v3.clone());
-    //     v.push(v1);
-    //     v.push(v3);
-    //     v.push(v4);
-    // }
-
     // это надо вынести в какой-то отдельный модуль
     #[derive(Copy, Clone)]
     pub struct WorldPos{pub v: Vector3<ZFloat>}
