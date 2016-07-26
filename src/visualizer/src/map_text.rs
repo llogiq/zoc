@@ -7,7 +7,8 @@ use core::{MapPos};
 use camera::Camera;
 use geom;
 use move_helper::{MoveHelper};
-use context::{Context, texture_from_bytes};
+use context::{Context};
+use texture::{load_texture_raw};
 use tactical_screen::{Mesh};
 use text;
 use ::{Vertex};
@@ -70,7 +71,7 @@ impl MapTextManager {
             to.v.z += 2.0;
             let mesh = {
                 let (w, h, texture_data) = text::text_to_texture(&context.font, 80.0, &command.text);
-                let texture = texture_from_bytes(&mut context.factory, w, h, &texture_data);
+                let texture = load_texture_raw(&mut context.factory, w, h, &texture_data);
                 let scale_factor = 200.0; // TODO: take camera zoom into account
                 let h_2 = (h as f32 / scale_factor) / 2.0;
                 let w_2 = (w as f32 / scale_factor) / 2.0;

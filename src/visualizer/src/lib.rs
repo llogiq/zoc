@@ -25,6 +25,7 @@ mod move_helper;
 mod camera;
 mod geom;
 mod screen;
+mod texture;
 mod tactical_screen;
 mod context_menu_popup;
 mod main_menu_screen;

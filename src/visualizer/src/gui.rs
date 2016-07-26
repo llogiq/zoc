@@ -3,7 +3,8 @@
 use std::collections::{HashMap};
 use cgmath::{Vector3, Matrix4, ortho};
 use core::types::{ZInt, Size2, ZFloat};
-use context::{Context, texture_from_bytes};
+use context::{Context};
+use texture::{load_texture_raw};
 use types::{ScreenPos};
 use text;
 use tactical_screen::{Mesh};
@@ -48,7 +49,7 @@ impl Button {
     pub fn new(context: &mut Context, label: &str, pos: &ScreenPos) -> Button {
         let text_size = basic_text_size(context);
         let (w, h, texture_data) = text::text_to_texture(&context.font, text_size, label);
-        let texture = texture_from_bytes(&mut context.factory, w, h, &texture_data);
+        let texture = load_texture_raw(&mut context.factory, w, h, &texture_data);
         let h = h as f32;
         let w = w as f32;
         let vertices = &[

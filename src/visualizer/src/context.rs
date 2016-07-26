@@ -1,44 +1,20 @@
 // See LICENSE file for copyright and license details.
 
 use std::sync::mpsc::{Sender};
-// use std::path::{Path};
 use cgmath::{Vector2, Matrix4, SquareMatrix, Array};
 use glutin::{self, Api, Event, MouseButton, GlRequest};
 use glutin::ElementState::{Pressed, Released};
 use core::types::{Size2, ZInt};
 use screen::{ScreenCommand};
-use types::{ScreenPos, ColorFormat};
+use types::{ScreenPos};
+use texture::{load_texture_raw};
 use ::{pipe};
-
 use rusttype;
-use image;
-use std::io::Cursor;
 use gfx::traits::{Factory, FactoryExt};
-use gfx::handle::{ShaderResourceView};
-use gfx::{self, tex};
+use gfx;
 use gfx_gl;
 use gfx_glutin;
 use core::fs;
-
-// TODO: найти более подходящее место
-pub fn load_texture<R, F>(factory: &mut F, data: &[u8]) -> ShaderResourceView<R, [f32; 4]>
-    where R: gfx::Resources, F: gfx::Factory<R>
-{
-    let img = image::load(Cursor::new(data), image::PNG).unwrap().to_rgba();
-    let (width, height) = img.dimensions();
-    let kind = tex::Kind::D2(width as tex::Size, height as tex::Size, tex::AaMode::Single);
-    let t: &[u8] = &img.into_vec();
-    let (_, view) = factory.create_texture_const_u8::<ColorFormat>(kind, &[t]).unwrap();
-    view
-}
-
-pub fn texture_from_bytes<R, F>(factory: &mut F, w: u16, h: u16, data: &[u8]) -> ShaderResourceView<R, [f32; 4]>
-    where R: gfx::Resources, F: gfx::Factory<R>
-{
-    let kind = tex::Kind::D2(w as tex::Size, h as tex::Size, tex::AaMode::Single);
-    let (_, view) = factory.create_texture_const_u8::<ColorFormat>(kind, &[data]).unwrap();
-    view
-}
 
 fn new_pso(
     window: &glutin::Window,
@@ -119,7 +95,7 @@ impl Context {
         // fake mesh for pipeline initialization
         let indices: &[u16] = &[];
         let (vb, _) = factory.create_vertex_buffer_with_slice(&[], indices);
-        let fake_texture = texture_from_bytes(&mut factory, 2, 2, &[0; 4]);
+        let fake_texture = load_texture_raw(&mut factory, 2, 2, &[0; 4]);
         let data = pipe::Data {
             basic_color: [1.0, 1.0, 1.0, 1.0],
             vbuf: vb,

@@ -71,7 +71,8 @@ use unit_type_visual_info::{
 };
 use selection::{SelectionManager, get_selection_mesh};
 use map_text::{MapTextManager};
-use context::{Context, load_texture};
+use context::{Context};
+use texture::{load_texture};
 use ::{Vertex};
 use core::fs;
 use geom;
