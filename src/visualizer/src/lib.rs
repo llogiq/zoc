@@ -45,7 +45,7 @@ use main_menu_screen::{MainMenuScreen};
 pub struct Visualizer {
     screens: Vec<Box<Screen>>,
     popups: Vec<Box<Screen>>,
-    should_close: bool, // объединит с такой же фигней в контексте =\
+    should_close: bool,
     last_time: u64,
     context: Context,
     rx: Receiver<ScreenCommand>,
