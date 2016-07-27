@@ -2,6 +2,7 @@
 
 use glutin::{Event};
 use context::{Context};
+use types::{Time};
 
 pub enum ScreenCommand {
     PopScreen,
@@ -16,7 +17,7 @@ pub enum EventStatus {
 }
 
 pub trait Screen {
-    fn tick(&mut self, context: &mut Context, dtime: u64);
+    fn tick(&mut self, context: &mut Context, dtime: &Time);
     fn handle_event(&mut self, context: &mut Context, event: &Event) -> EventStatus;
 }
 

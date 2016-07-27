@@ -2,8 +2,8 @@
 
 use std::collections::{HashMap, VecDeque};
 use cgmath::{Matrix4, Matrix3};
-use core::types::{ZInt};
 use core::{MapPos};
+use types::{ZInt, Time};
 use camera::Camera;
 use geom;
 use move_helper::{MoveHelper};
@@ -111,7 +111,7 @@ impl MapTextManager {
         &mut self,
         context: &mut Context,
         camera: &Camera,
-        dtime: u64,
+        dtime: &Time,
     ) {
         self.do_commands(context);
         let rot_z_mat = Matrix4::from(Matrix3::from_angle_z(camera.get_z_angle()));

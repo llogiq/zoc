@@ -4,8 +4,7 @@ use std::sync::mpsc::{Sender};
 use std::collections::{HashMap};
 use glutin::{self, Event, MouseButton, VirtualKeyCode};
 use glutin::ElementState::{Released};
-use core::types::{ZInt};
-use types::{ScreenPos};
+use types::{ZInt, Time, ScreenPos};
 use screen::{Screen, ScreenCommand, EventStatus};
 use context::{Context};
 use gui::{ButtonManager, Button, ButtonId, is_tap, basic_text_size};
@@ -224,7 +223,7 @@ impl ContextMenuPopup {
 }
 
 impl Screen for ContextMenuPopup {
-    fn tick(&mut self, context: &mut Context, _: u64) {
+    fn tick(&mut self, context: &mut Context, _: &Time) {
         context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
         self.button_manager.draw(context);
     }

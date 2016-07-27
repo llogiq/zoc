@@ -3,13 +3,12 @@
 use std::f32::consts::{PI};
 use rand::{thread_rng, Rng};
 use cgmath::{Vector3, rad};
-use core::types::{ZFloat, ZInt};
 use core::partial_state::{PartialState};
 use core::game_state::{GameState};
 use core::{self, UnitInfo, AttackInfo, ReactionFireMode, UnitId, ExactPos};
 use core::unit::{UnitTypeId};
 use core::db::{Db};
-use ::types::{WorldPos};
+use types::{ZFloat, ZInt, WorldPos, Time};
 use mesh::{MeshId};
 use geom;
 use scene::{Scene, SceneNode, NodeId};
@@ -19,7 +18,7 @@ use map_text::{MapTextManager};
 
 pub trait EventVisualizer {
     fn is_finished(&self) -> bool;
-    fn draw(&mut self, scene: &mut Scene, dtime: u64);
+    fn draw(&mut self, scene: &mut Scene, dtime: &Time);
     fn end(&mut self, scene: &mut Scene, state: &PartialState);
 }
 
@@ -33,7 +32,7 @@ impl EventVisualizer for EventMoveVisualizer {
         self.move_helper.is_finished()
     }
 
-    fn draw(&mut self, scene: &mut Scene, dtime: u64) {
+    fn draw(&mut self, scene: &mut Scene, dtime: &Time) {
         let pos = self.move_helper.step(dtime);
         scene.node_mut(&self.node_id).pos = pos;
     }
@@ -78,7 +77,7 @@ impl EventVisualizer for EventEndTurnVisualizer {
         true
     }
 
-    fn draw(&mut self, _: &mut Scene, _: u64) {}
+    fn draw(&mut self, _: &mut Scene, _: &Time) {}
 
     fn end(&mut self, _: &mut Scene, _: &PartialState) {}
 }
@@ -168,7 +167,7 @@ impl EventVisualizer for EventCreateUnitVisualizer {
         self.move_helper.is_finished()
     }
 
-    fn draw(&mut self, scene: &mut Scene, dtime: u64) {
+    fn draw(&mut self, scene: &mut Scene, dtime: &Time) {
         let node = scene.node_mut(&self.node_id);
         node.pos = self.move_helper.step(dtime);
     }
@@ -268,7 +267,7 @@ impl EventVisualizer for EventAttackUnitVisualizer {
         }
     }
 
-    fn draw(&mut self, scene: &mut Scene, dtime: u64) {
+    fn draw(&mut self, scene: &mut Scene, dtime: &Time) {
         if let Some(ref mut shell_move) = self.shell_move {
             let shell_node_id = self.shell_node_id.as_ref().unwrap();
             let mut pos = shell_move.step(dtime);
@@ -336,7 +335,7 @@ impl EventVisualizer for EventShowUnitVisualizer {
         true
     }
 
-    fn draw(&mut self, _: &mut Scene, _: u64) {}
+    fn draw(&mut self, _: &mut Scene, _: &Time) {}
 
     fn end(&mut self, _: &mut Scene, _: &PartialState) {}
 }
@@ -362,7 +361,7 @@ impl EventVisualizer for EventHideUnitVisualizer {
         true
     }
 
-    fn draw(&mut self, _: &mut Scene, _: u64) {}
+    fn draw(&mut self, _: &mut Scene, _: &Time) {}
 
     fn end(&mut self, _: &mut Scene, _: &PartialState) {}
 }
@@ -404,7 +403,7 @@ impl EventVisualizer for EventUnloadUnitVisualizer {
         self.move_helper.is_finished()
     }
 
-    fn draw(&mut self, scene: &mut Scene, dtime: u64) {
+    fn draw(&mut self, scene: &mut Scene, dtime: &Time) {
         let node = scene.node_mut(&self.node_id);
         node.pos = self.move_helper.step(dtime);
     }
@@ -446,7 +445,7 @@ impl EventVisualizer for EventLoadUnitVisualizer {
         self.move_helper.is_finished()
     }
 
-    fn draw(&mut self, scene: &mut Scene, dtime: u64) {
+    fn draw(&mut self, scene: &mut Scene, dtime: &Time) {
         let node_id = scene.unit_id_to_node_id(&self.passenger_id);
         let node = scene.node_mut(&node_id);
         node.pos = self.move_helper.step(dtime);
@@ -484,7 +483,7 @@ impl EventVisualizer for EventSetReactionFireModeVisualizer {
         true
     }
 
-    fn draw(&mut self, _: &mut Scene, _: u64) {}
+    fn draw(&mut self, _: &mut Scene, _: &Time) {}
 
     fn end(&mut self, _: &mut Scene, _: &PartialState) {}
 }

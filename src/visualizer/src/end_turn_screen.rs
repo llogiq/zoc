@@ -7,7 +7,7 @@ use screen::{Screen, ScreenCommand, EventStatus};
 use context::{Context};
 use gui::{ButtonManager, Button, is_tap};
 use core::{PlayerId};
-use types::{ScreenPos};
+use types::{ScreenPos, Time};
 
 pub struct EndTurnScreen {
     button_manager: ButtonManager,
@@ -45,7 +45,7 @@ impl EndTurnScreen {
 }
 
 impl Screen for EndTurnScreen {
-    fn tick(&mut self, context: &mut Context, _: u64) {
+    fn tick(&mut self, context: &mut Context, _: &Time) {
         context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
         self.button_manager.draw(context);
     }

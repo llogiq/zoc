@@ -41,12 +41,13 @@ use std::sync::mpsc::{channel, Receiver};
 use screen::{Screen, ScreenCommand, EventStatus};
 use context::{Context};
 use main_menu_screen::{MainMenuScreen};
+use types::{Time};
 
 pub struct Visualizer {
     screens: Vec<Box<Screen>>,
     popups: Vec<Box<Screen>>,
     should_close: bool,
-    last_time: u64,
+    last_time: Time,
     context: Context,
     rx: Receiver<ScreenCommand>,
 }
@@ -62,7 +63,7 @@ impl Visualizer {
             screens: screens,
             popups: Vec::new(),
             should_close: false,
-            last_time: time::precise_time_ns(),
+            last_time: Time{n: time::precise_time_ns()},
             context: context,
             rx: rx,
         }
@@ -81,10 +82,10 @@ impl Visualizer {
         self.context.encoder.clear_depth(&self.context.data.out_depth, 1.0);
         {
             let screen = self.screens.last_mut().unwrap();
-            screen.tick(&mut self.context, dtime);
+            screen.tick(&mut self.context, &dtime);
         }
         for popup in &mut self.popups {
-            popup.tick(&mut self.context, dtime);
+            popup.tick(&mut self.context, &dtime);
         }
         self.context.encoder.flush(&mut self.context.device);
         self.context.window.swap_buffers()
@@ -139,9 +140,9 @@ impl Visualizer {
         !self.should_close && !self.context.should_close()
     }
 
-    fn update_time(&mut self) -> u64 {
-        let time = time::precise_time_ns();
-        let dtime = time - self.last_time;
+    fn update_time(&mut self) -> Time {
+        let time = Time{n: time::precise_time_ns()};
+        let dtime = Time{n: time.n - self.last_time.n};
         self.last_time = time;
         dtime
     }

@@ -2,7 +2,7 @@
 
 use cgmath::{Vector3, EuclideanVector};
 use geom;
-use types::{ZFloat, WorldPos};
+use types::{ZFloat, WorldPos, Time};
 
 pub struct MoveHelper {
     to: WorldPos,
@@ -34,7 +34,7 @@ impl MoveHelper {
         self.current_dist >= self.dist
     }
 
-    pub fn step(&mut self, dtime: u64) -> WorldPos {
+    pub fn step(&mut self, dtime: &Time) -> WorldPos {
         let _ = self.step_diff(dtime);
         self.current.clone()
     }
@@ -43,8 +43,8 @@ impl MoveHelper {
         &self.to
     }
 
-    pub fn step_diff(&mut self, dtime: u64) -> Vector3<ZFloat> {
-        let dt = dtime as ZFloat / 1000000000.0;
+    pub fn step_diff(&mut self, dtime: &Time) -> Vector3<ZFloat> {
+        let dt = dtime.n as ZFloat / 1000000000.0;
         let step = self.dir * dt;
         self.current_dist += step.magnitude();
         self.current.v = self.current.v + step; // TODO: update cgmath-rs version and replace to `+=`

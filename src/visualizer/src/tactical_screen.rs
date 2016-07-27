@@ -20,7 +20,7 @@ use cgmath::{
 use collision::{Plane, Ray, Intersect};
 use glutin::{self, VirtualKeyCode, Event, MouseButton};
 use glutin::ElementState::{Released};
-use core::types::{Size2, ZInt, ZFloat};
+use types::{Size2, ZInt, ZFloat, Time};
 use core::map::{Map, Terrain, spiral_iter};
 use core::dir::{Dir, dirs};
 use core::partial_state::{PartialState};
@@ -896,7 +896,7 @@ impl TacticalScreen {
         }
     }
 
-    fn draw_scene(&mut self, context: &mut Context, dtime: u64) {
+    fn draw_scene(&mut self, context: &mut Context, dtime: &Time) {
         context.data.basic_color = [1.0, 1.0, 1.0, 1.0];
         self.draw_scene_nodes(context);
         self.draw_map(context);
@@ -918,7 +918,7 @@ impl TacticalScreen {
         }
     }
 
-    fn draw(&mut self, context: &mut Context, dtime: u64) {
+    fn draw(&mut self, context: &mut Context, dtime: &Time) {
         context.clear_color = [0.7, 0.7, 0.7, 1.0];
         context.encoder.clear(&context.data.out, context.clear_color);
         self.draw_scene(context, dtime);
@@ -1189,7 +1189,7 @@ impl TacticalScreen {
 }
 
 impl Screen for TacticalScreen {
-    fn tick(&mut self, context: &mut Context, dtime: u64) {
+    fn tick(&mut self, context: &mut Context, dtime: &Time) {
         self.logic(context);
         self.draw(context, dtime);
         self.handle_context_menu_popup_commands(context);
