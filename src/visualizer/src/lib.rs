@@ -38,6 +38,7 @@ mod mesh;
 mod fs;
 
 use std::sync::mpsc::{channel, Receiver};
+use gfx::traits::{Device};
 use screen::{Screen, ScreenCommand, EventStatus};
 use context::{Context};
 use main_menu_screen::{MainMenuScreen};
@@ -90,6 +91,7 @@ impl Visualizer {
         self.context.encoder.flush(&mut self.context.device);
         self.context.window.swap_buffers()
             .expect("Can`t swap buffers");
+        self.context.device.cleanup();
     }
 
     fn handle_events(&mut self) {
