@@ -15,6 +15,7 @@ use gfx;
 use gfx_gl;
 use gfx_glutin;
 use fs;
+use mesh::{Mesh};
 
 fn new_pso(
     window: &glutin::Window,
@@ -63,9 +64,8 @@ pub struct Context {
     pub clear_color: [f32; 4],
     pub device: gfx_gl::Device,
     pub encoder: gfx::Encoder<gfx_gl::Resources, gfx_gl::CommandBuffer>,
-    pub pso: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
-    pub pso_wire: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
-    pub sampler: gfx::handle::Sampler<gfx_gl::Resources>,
+    pso: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
+    pso_wire: gfx::PipelineState<gfx_gl::Resources, pipe::Meta>,
     pub factory: gfx_gl::Factory,
     pub font: rusttype::Font<'static>,
     pub data: pipe::Data<gfx_gl::Resources>,
@@ -99,7 +99,7 @@ impl Context {
         let data = pipe::Data {
             basic_color: [1.0, 1.0, 1.0, 1.0],
             vbuf: vb,
-            texture: (fake_texture, sampler.clone()),
+            texture: (fake_texture, sampler),
             out: main_color,
             out_depth: main_depth,
             mvp: Matrix4::identity().into(),
@@ -114,7 +114,6 @@ impl Context {
             encoder: encoder,
             pso: pso,
             pso_wire: pso_wire,
-            sampler: sampler,
             should_close: false,
             commands_tx: tx,
             font: font,
@@ -133,6 +132,23 @@ impl Context {
 
     pub fn mouse(&self) -> &MouseState {
         &self.mouse
+    }
+
+    pub fn draw_mesh_with_color(&mut self, color: [f32; 4], mesh: &Mesh) {
+        let old_color = self.data.basic_color;
+        self.data.basic_color = color;
+        self.draw_mesh(mesh);
+        self.data.basic_color = old_color;
+    }
+
+    pub fn draw_mesh(&mut self, mesh: &Mesh) {
+        self.data.texture.0 = mesh.texture.clone();
+        self.data.vbuf = mesh.vertex_buffer.clone();
+        if mesh.is_wire() {
+            self.encoder.draw(&mesh.slice, &self.pso_wire, &self.data);
+        } else {
+            self.encoder.draw(&mesh.slice, &self.pso, &self.data);
+        }
     }
 
     pub fn add_command(&mut self, command: ScreenCommand) {

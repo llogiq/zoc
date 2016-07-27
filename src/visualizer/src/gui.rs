@@ -69,9 +69,7 @@ impl Button {
     }
 
     pub fn draw(&self, context: &mut Context) {
-        context.data.texture.0 = self.mesh.texture.clone();
-        context.data.vbuf = self.mesh.vertex_buffer.clone();
-        context.encoder.draw(&self.mesh.slice, &context.pso, &context.data);
+        context.draw_mesh(&self.mesh);
     }
 
     pub fn pos(&self) -> &ScreenPos {

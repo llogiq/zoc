@@ -122,9 +122,7 @@ impl MapTextManager {
             let tr_mat = Matrix4::from_translation(pos.v);
             let mvp = camera.mat() * tr_mat * rot_z_mat * rot_x_mat;
             context.data.mvp = mvp.into();
-            context.data.texture.0 = map_text.mesh.texture.clone();
-            context.data.vbuf = map_text.mesh.vertex_buffer.clone();
-            context.encoder.draw(&map_text.mesh.slice, &context.pso, &context.data);
+            context.draw_mesh(&map_text.mesh);
         }
         self.delete_old();
     }

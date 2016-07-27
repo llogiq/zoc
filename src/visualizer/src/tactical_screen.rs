@@ -856,14 +856,10 @@ impl TacticalScreen {
             let id = mesh_id.id as usize;
             let mesh = &self.meshes[id];
             context.data.mvp = m.into(); // TODO: use separate model matrix
-            context.data.texture.0 = mesh.texture.clone();
-            context.data.vbuf = mesh.vertex_buffer.clone();
             if mesh.is_wire() {
-                context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
-                context.encoder.draw(&mesh.slice, &context.pso_wire, &context.data);
+                context.draw_mesh_with_color([0.0, 0.0, 0.0, 1.0], &mesh);
             } else {
-                context.data.basic_color = [1.0, 1.0, 1.0, 1.0];
-                context.encoder.draw(&mesh.slice, &context.pso, &context.data);
+                context.draw_mesh(&mesh);
             }
         }
         for node in &node.children {
@@ -880,18 +876,10 @@ impl TacticalScreen {
 
     fn draw_map(&mut self, context: &mut Context) {
         context.data.mvp = self.camera.mat().into();
-        {
-            context.data.basic_color = [0.85, 0.85, 0.85, 1.0];
-            context.data.texture.0 = self.visible_map_mesh.texture.clone();
-            context.data.vbuf = self.visible_map_mesh.vertex_buffer.clone();
-            context.encoder.draw(&self.visible_map_mesh.slice, &context.pso, &context.data);
-        }
-        {
-            context.data.basic_color = [0.5, 0.5, 0.5, 1.0];
-            context.data.texture.0 = self.fow_map_mesh.texture.clone();
-            context.data.vbuf = self.fow_map_mesh.vertex_buffer.clone();
-            context.encoder.draw(&self.fow_map_mesh.slice, &context.pso, &context.data);
-        }
+        context.data.basic_color = [0.85, 0.85, 0.85, 1.0];
+        context.draw_mesh(&self.visible_map_mesh);
+        context.data.basic_color = [0.5, 0.5, 0.5, 1.0];
+        context.draw_mesh(&self.fow_map_mesh);
     }
 
     fn draw_scene(&mut self, context: &mut Context, dtime: &Time) {
@@ -900,15 +888,11 @@ impl TacticalScreen {
         self.draw_map(context);
         if let Some(ref walkable_mesh) = self.walkable_mesh {
             context.data.basic_color = [0.0, 0.0, 1.0, 1.0];
-            context.data.texture.0 = walkable_mesh.texture.clone();
-            context.data.vbuf = walkable_mesh.vertex_buffer.clone();
-            context.encoder.draw(&walkable_mesh.slice, &context.pso_wire, &context.data);
+            context.draw_mesh(walkable_mesh);
         }
         if let Some(ref targets_mesh) = self.targets_mesh {
             context.data.basic_color = [1.0, 0.0, 0.0, 1.0];
-            context.data.texture.0 = targets_mesh.texture.clone();
-            context.data.vbuf = targets_mesh.vertex_buffer.clone();
-            context.encoder.draw(&targets_mesh.slice, &context.pso_wire, &context.data);
+            context.draw_mesh(targets_mesh);
         }
         if let Some(ref mut event_visualizer) = self.event_visualizer {
             let i = self.player_info.get_mut(self.core.player_id());
