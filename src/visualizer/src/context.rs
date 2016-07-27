@@ -53,7 +53,7 @@ pub struct MouseState {
 }
 
 // TODO: make more fields private?
-// TODO: Избавиться от gfx_gl
+// TODO: use gfx-rs generics, not gfx_gl types
 pub struct Context {
     pub win_size: Size2,
     mouse: MouseState,
@@ -68,7 +68,7 @@ pub struct Context {
     pub sampler: gfx::handle::Sampler<gfx_gl::Resources>,
     pub factory: gfx_gl::Factory,
     pub font: rusttype::Font<'static>,
-    pub data: pipe::Data<gfx_gl::Resources>, // TODO: rename to Pipeline?
+    pub data: pipe::Data<gfx_gl::Resources>,
 }
 
 impl Context {
@@ -134,13 +134,6 @@ impl Context {
     pub fn mouse(&self) -> &MouseState {
         &self.mouse
     }
-
-    // TODO: использовать этот метод везде вместо прямого изменения поля
-    /*
-    pub fn set_basic_color(&mut self, color: [f32; 4]) {
-        self.data.basic_color = color;
-    }
-    */
 
     pub fn add_command(&mut self, command: ScreenCommand) {
         self.commands_tx.send(command)
