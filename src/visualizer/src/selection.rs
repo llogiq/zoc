@@ -10,7 +10,8 @@ use fs;
 use scene::{Scene, SceneNode, NodeId};
 use context::{Context};
 use texture::{load_texture};
-use types::{WorldPos, MeshId};
+use types::{WorldPos};
+use mesh::{MeshId};
 use mesh::{Mesh};
 use ::{Vertex};
 

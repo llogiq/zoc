@@ -65,9 +65,6 @@ pub mod types {
 
     #[derive(Copy, Clone)]
     pub struct Time{pub n: u64}
-
-    #[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Clone)]
-    pub struct MeshId{pub id: ZInt}
 }
 
 use std::sync::mpsc::{channel, Receiver};

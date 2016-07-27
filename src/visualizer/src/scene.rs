@@ -3,7 +3,8 @@
 use std::collections::{HashMap};
 use cgmath::{Rad};
 use core::{UnitId};
-use types::{ZInt, ZFloat, WorldPos, MeshId};
+use types::{ZInt, ZFloat, WorldPos};
+use mesh::{MeshId};
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Clone)]
 pub struct NodeId{pub id: ZInt}

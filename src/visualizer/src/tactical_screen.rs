@@ -70,14 +70,14 @@ use selection::{SelectionManager, get_selection_mesh};
 use map_text::{MapTextManager};
 use context::{Context};
 use texture::{Texture, load_texture};
-use mesh::{Mesh};
+use mesh::{Mesh, MeshId};
 use ::{Vertex};
 use fs;
 use geom;
 use screen::{Screen, ScreenCommand, EventStatus};
 use context_menu_popup::{self, ContextMenuPopup};
 use end_turn_screen::{EndTurnScreen};
-use types::{ScreenPos, WorldPos, MeshId};
+use types::{ScreenPos, WorldPos};
 
 fn get_initial_camera_pos(map_size: &Size2) -> WorldPos {
     let pos = get_max_camera_pos(map_size);

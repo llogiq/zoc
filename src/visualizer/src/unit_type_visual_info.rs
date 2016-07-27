@@ -2,7 +2,8 @@
 
 use std::collections::{HashMap};
 use core::unit::{UnitTypeId};
-use types::{ZFloat, MeshId};
+use types::{ZFloat};
+use mesh::{MeshId};
 
 pub struct UnitTypeVisualInfo {
     pub mesh_id: MeshId,
