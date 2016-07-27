@@ -3,7 +3,7 @@
 use gfx;
 use gfx::traits::{FactoryExt};
 use gfx_gl;
-use core::fs;
+use fs;
 use context::{Context};
 use texture::{Texture, load_texture};
 use ::{Vertex};

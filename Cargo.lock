@@ -87,7 +87,6 @@ dependencies = [
 name = "core"
 version = "0.0.1"
 dependencies = [
- "android_glue 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cgmath 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

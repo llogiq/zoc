@@ -14,7 +14,7 @@ use gfx::traits::{Factory, FactoryExt};
 use gfx;
 use gfx_gl;
 use gfx_glutin;
-use core::fs;
+use fs;
 
 fn new_pso(
     window: &glutin::Window,

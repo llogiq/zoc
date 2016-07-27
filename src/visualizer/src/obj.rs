@@ -6,7 +6,7 @@ use std::io::{BufRead};
 use std::path::{Path};
 use std::str::{SplitWhitespace, Split, FromStr};
 use core::types::{ZFloat};
-use core::fs;
+use fs;
 use ::{Vertex};
 
 type Face = [[u16; 3]; 3];

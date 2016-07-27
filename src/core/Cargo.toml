@@ -8,9 +8,6 @@ authors = ["ozkriff <ozkriffgmail.com>"]
 name = "core"
 doctest = false
 
-[target.arm-linux-androideabi.dependencies]
-android_glue = "*"
-
 [dependencies]
 cgmath = "*"
 rand = "*"

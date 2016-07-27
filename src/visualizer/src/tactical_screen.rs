@@ -72,7 +72,7 @@ use context::{Context};
 use texture::{Texture, load_texture};
 use mesh::{Mesh};
 use ::{Vertex};
-use core::fs;
+use fs;
 use geom;
 use screen::{Screen, ScreenCommand, EventStatus};
 use context_menu_popup::{self, ContextMenuPopup};

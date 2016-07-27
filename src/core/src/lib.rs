@@ -3,9 +3,6 @@
 extern crate cgmath;
 extern crate rand;
 
-#[cfg(target_os = "android")]
-extern crate android_glue;
-
 pub mod geom;
 pub mod map;
 pub mod db;
@@ -14,8 +11,6 @@ pub mod dir;
 pub mod partial_state;
 pub mod game_state;
 pub mod pathfinder;
-
-pub mod fs;
 pub mod misc;
 pub mod types;
 

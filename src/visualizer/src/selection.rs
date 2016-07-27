@@ -1,11 +1,12 @@
 // See LICENSE file for copyright and license details.
 
 use cgmath::{rad};
-use core::{fs, UnitId};
+use core::{UnitId};
 use core::partial_state::{PartialState};
 use core::game_state::{GameState};
 use core::dir::{dirs};
 use geom;
+use fs;
 use scene::{Scene, SceneNode, NodeId};
 use context::{Context};
 use texture::{load_texture};
