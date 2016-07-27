@@ -338,6 +338,7 @@ impl PlayerInfoManager {
 pub struct TacticalScreen {
     camera: Camera,
     map_text_manager: MapTextManager,
+    // TODO: Move buttons to 'Gui'/'Ui' struct
     button_manager: ButtonManager,
     button_end_turn_id: ButtonId,
     button_deselect_unit_id: ButtonId,
@@ -352,13 +353,12 @@ pub struct TacticalScreen {
     unit_type_visual_info: UnitTypeVisualInfoManager,
     selected_unit_id: Option<UnitId>,
     selection_manager: SelectionManager,
-    // // TODO: move to 'meshes'
+    // TODO: move to 'meshes'
     walkable_mesh: Option<Mesh>,
     targets_mesh: Option<Mesh>,
     visible_map_mesh: Mesh,
     fow_map_mesh: Mesh,
     floor_tex: Texture,
-    floor_tex_2: Texture,
     tx: Sender<context_menu_popup::Command>,
     rx: Receiver<context_menu_popup::Command>,
 }
@@ -368,13 +368,12 @@ impl TacticalScreen {
         let core = Core::new(core_options);
         let map_size = core.map_size().clone();
         let player_info = PlayerInfoManager::new(&map_size, core_options);
-        let floor_tex = load_texture(&mut context.factory, &fs::load("floor.png").into_inner());
-        let floor_tex_2 = load_texture(&mut context.factory, &fs::load("dark_floor.png").into_inner());
+        let floor_tex = load_texture(&mut context.factory, &fs::load("hex.png").into_inner());
         let mut meshes = Vec::new();
         let visible_map_mesh = generate_visible_tiles_mesh(
             context, &player_info.get(core.player_id()).game_state, floor_tex.clone());
         let fow_map_mesh = generate_fogged_tiles_mesh(
-            context, &player_info.get(core.player_id()).game_state, floor_tex_2.clone());
+            context, &player_info.get(core.player_id()).game_state, floor_tex.clone());
         let selection_marker_mesh_id = add_mesh(
             &mut meshes, get_selection_mesh(context));
         let big_building_mesh_w_id = add_mesh(
@@ -439,7 +438,6 @@ impl TacticalScreen {
             visible_map_mesh: visible_map_mesh,
             fow_map_mesh: fow_map_mesh,
             floor_tex: floor_tex,
-            floor_tex_2: floor_tex_2,
             tx: tx,
             rx: rx,
         };
@@ -883,13 +881,13 @@ impl TacticalScreen {
     fn draw_map(&mut self, context: &mut Context) {
         context.data.mvp = self.camera.mat().into();
         {
-            context.data.basic_color = [1.0, 1.0, 1.0, 1.0];
+            context.data.basic_color = [0.85, 0.85, 0.85, 1.0];
             context.data.texture.0 = self.visible_map_mesh.texture.clone();
             context.data.vbuf = self.visible_map_mesh.vertex_buffer.clone();
             context.encoder.draw(&self.visible_map_mesh.slice, &context.pso, &context.data);
         }
         {
-            context.data.basic_color = [0.7, 0.7, 0.7, 1.0];
+            context.data.basic_color = [0.5, 0.5, 0.5, 1.0];
             context.data.texture.0 = self.fow_map_mesh.texture.clone();
             context.data.vbuf = self.fow_map_mesh.vertex_buffer.clone();
             context.encoder.draw(&self.fow_map_mesh.slice, &context.pso, &context.data);
@@ -1101,7 +1099,7 @@ impl TacticalScreen {
             self.event_visualizer.as_mut().unwrap().end(scene, state);
             state.apply_event(self.core.db(), self.event.as_ref().unwrap());
             self.visible_map_mesh = generate_visible_tiles_mesh(context, state, self.floor_tex.clone());
-            self.fow_map_mesh = generate_fogged_tiles_mesh(context, state, self.floor_tex_2.clone());
+            self.fow_map_mesh = generate_fogged_tiles_mesh(context, state, self.floor_tex.clone());
         }
         self.event_visualizer = None;
         self.event = None;
