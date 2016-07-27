@@ -9,7 +9,7 @@ use geom;
 use move_helper::{MoveHelper};
 use context::{Context};
 use texture::{load_texture_raw};
-use tactical_screen::{Mesh};
+use mesh::{Mesh};
 use text;
 use ::{Vertex};
 

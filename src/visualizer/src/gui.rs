@@ -7,13 +7,14 @@ use context::{Context};
 use texture::{load_texture_raw};
 use types::{ScreenPos};
 use text;
-use tactical_screen::{Mesh};
+use mesh::{Mesh};
 use ::{Vertex};
 
 /// Check if this was a tap or swipe
 pub fn is_tap(context: &Context) -> bool {
     let mouse = context.mouse();
     let pos = &mouse.pos;
+    // TODO: use Vector2 magic
     let x = pos.v.x - mouse.last_press_pos.v.x;
     let y = pos.v.y - mouse.last_press_pos.v.y;
     let tolerance = 20;

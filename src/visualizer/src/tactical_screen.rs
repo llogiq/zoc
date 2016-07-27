@@ -20,9 +20,6 @@ use cgmath::{
 use collision::{Plane, Ray, Intersect};
 use glutin::{self, VirtualKeyCode, Event, MouseButton};
 use glutin::ElementState::{Released};
-use gfx;
-use gfx::traits::{FactoryExt};
-use gfx_gl;
 use core::types::{Size2, ZInt, ZFloat};
 use core::map::{Map, Terrain, spiral_iter};
 use core::dir::{Dir, dirs};
@@ -72,7 +69,8 @@ use unit_type_visual_info::{
 use selection::{SelectionManager, get_selection_mesh};
 use map_text::{MapTextManager};
 use context::{Context};
-use texture::{load_texture};
+use texture::{Texture, load_texture};
+use mesh::{Mesh};
 use ::{Vertex};
 use core::fs;
 use geom;
@@ -90,40 +88,6 @@ fn get_max_camera_pos(map_size: &Size2) -> WorldPos {
     let map_pos = MapPos{v: Vector2{x: map_size.w, y: map_size.h - 1}};
     let pos = geom::map_pos_to_world_pos(&map_pos);
     WorldPos{v: Vector3{x: -pos.v.x, y: -pos.v.y, z: 0.0}}
-}
-
-pub type Texture = gfx::handle::ShaderResourceView<gfx_gl::Resources, [f32; 4]>;
-
-// TODO: поля-то публичные =\
-pub struct Mesh {
-    pub slice: gfx::Slice<gfx_gl::Resources>,
-    pub vertex_buffer: gfx::handle::Buffer<gfx_gl::Resources, Vertex>,
-    pub texture: Texture,
-    pub is_wire: bool,
-}
-
-impl Mesh {
-    pub fn new(context: &mut Context, vertices: &[Vertex], indices: &[u16], tex: Texture) -> Mesh {
-        let (v, s) = context.factory.create_vertex_buffer_with_slice(vertices, indices);
-        Mesh {
-            slice: s,
-            vertex_buffer: v,
-            texture: tex,
-            is_wire: false,
-        }
-    }
-
-    pub fn new_wireframe(context: &mut Context, vertices: &[Vertex], indices: &[u16]) -> Mesh {
-        let (v, s) = context.factory.create_vertex_buffer_with_slice(vertices, indices);
-        let texture_data = fs::load("white.png").into_inner();
-        let texture = load_texture(&mut context.factory, &texture_data);
-        Mesh {
-            slice: s,
-            vertex_buffer: v,
-            texture: texture,
-            is_wire: true,
-        }
-    }
 }
 
 // TODO: `cond: F` -> `enum NameMe{Visible, Fogged}`
@@ -896,7 +860,7 @@ impl TacticalScreen {
             context.data.mvp = m.into(); // TODO: use separate model matrix
             context.data.texture.0 = mesh.texture.clone();
             context.data.vbuf = mesh.vertex_buffer.clone();
-            if mesh.is_wire {
+            if mesh.is_wire() {
                 context.data.basic_color = [0.0, 0.0, 0.0, 1.0];
                 context.encoder.draw(&mesh.slice, &context.pso_wire, &context.data);
             } else {

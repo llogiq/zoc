@@ -4,7 +4,10 @@ use std::io::Cursor;
 use image;
 use gfx::handle::{ShaderResourceView};
 use gfx::{self, tex};
+use gfx_gl;
 use types::{ColorFormat};
+
+pub type Texture = gfx::handle::ShaderResourceView<gfx_gl::Resources, [f32; 4]>;
 
 pub fn load_texture<R, F>(factory: &mut F, data: &[u8]) -> ShaderResourceView<R, [f32; 4]>
     where R: gfx::Resources, F: gfx::Factory<R>

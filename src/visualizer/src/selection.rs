@@ -10,7 +10,7 @@ use scene::{Scene, SceneNode, NodeId};
 use context::{Context};
 use texture::{load_texture};
 use types::{WorldPos, MeshId};
-use tactical_screen::{Mesh};
+use mesh::{Mesh};
 use ::{Vertex};
 
 pub struct SelectionManager {

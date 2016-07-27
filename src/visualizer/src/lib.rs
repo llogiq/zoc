@@ -32,6 +32,7 @@ mod main_menu_screen;
 mod end_turn_screen;
 mod context;
 mod text;
+mod mesh;
 
 // TODO: убрать в честный модуль
 pub mod types {
