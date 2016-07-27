@@ -5,7 +5,7 @@ use image;
 use gfx::handle::{ShaderResourceView};
 use gfx::{self, tex};
 use gfx_gl;
-use types::{ColorFormat};
+use pipeline::{ColorFormat};
 
 pub type Texture = gfx::handle::ShaderResourceView<gfx_gl::Resources, [f32; 4]>;
 

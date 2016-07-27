@@ -13,7 +13,7 @@ use texture::{load_texture};
 use types::{WorldPos};
 use mesh::{MeshId};
 use mesh::{Mesh};
-use ::{Vertex};
+use pipeline::{Vertex};
 
 pub struct SelectionManager {
     unit_id: Option<UnitId>,

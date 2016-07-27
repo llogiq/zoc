@@ -20,6 +20,8 @@ mod scene;
 mod event_visualizer;
 mod unit_type_visual_info;
 mod selection;
+mod types;
+mod pipeline;
 mod map_text;
 mod move_helper;
 mod camera;
@@ -35,58 +37,10 @@ mod text;
 mod mesh;
 mod fs;
 
-// TODO: убрать в честный модуль
-pub mod types {
-    use gfx;
-    use cgmath::{Vector3, Vector2};
-
-    pub use core::types::{ZInt, ZFloat, Size2};
-
-    // TODO: вынести куда-нибудь, это же вообще не типы
-    pub type ColorFormat = gfx::format::Srgba8;
-    pub type DepthFormat = gfx::format::DepthStencil;
-    pub type SurfaceFormat = gfx::format::R8_G8_B8_A8;
-    pub type FullFormat = (SurfaceFormat, gfx::format::Unorm);
-
-    // это надо вынести в какой-то отдельный модуль
-    #[derive(Copy, Clone)]
-    pub struct WorldPos{pub v: Vector3<ZFloat>}
-
-    // его надо убить
-    #[derive(Copy, Clone)]
-    pub struct VertexCoord{pub v: Vector3<ZFloat>}
-
-    // его надо убить
-    #[derive(Copy, Clone)]
-    pub struct TextureCoord{pub v: Vector2<ZFloat>}
-
-    #[derive(Copy, Clone)]
-    pub struct ScreenPos{pub v: Vector2<ZInt>}
-
-    #[derive(Copy, Clone)]
-    pub struct Time{pub n: u64}
-}
-
 use std::sync::mpsc::{channel, Receiver};
 use screen::{Screen, ScreenCommand, EventStatus};
 use context::{Context};
 use main_menu_screen::{MainMenuScreen};
-
-gfx_defines! {
-    vertex Vertex {
-        pos: [f32; 3] = "a_Pos",
-        uv: [f32; 2] = "a_Uv",
-    }
-
-    pipeline pipe {
-        basic_color: gfx::Global<[f32; 4]> = "u_Basic_color",
-        mvp: gfx::Global<[[f32; 4]; 4]> = "u_ModelViewProj",
-        vbuf: gfx::VertexBuffer<Vertex> = (),
-        texture: gfx::TextureSampler<[f32; 4]> = "t_Tex",
-        out: gfx::BlendTarget<types::ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
-        out_depth: gfx::DepthTarget<types::DepthFormat> = gfx::preset::depth::LESS_EQUAL_WRITE,
-    }
-}
 
 pub struct Visualizer {
     screens: Vec<Box<Screen>>,

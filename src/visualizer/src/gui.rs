@@ -8,7 +8,7 @@ use texture::{load_texture_raw};
 use types::{ScreenPos};
 use text;
 use mesh::{Mesh};
-use ::{Vertex};
+use pipeline::{Vertex};
 
 /// Check if this was a tap or swipe
 pub fn is_tap(context: &Context) -> bool {

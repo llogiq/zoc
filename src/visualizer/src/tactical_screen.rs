@@ -71,7 +71,7 @@ use map_text::{MapTextManager};
 use context::{Context};
 use texture::{Texture, load_texture};
 use mesh::{Mesh, MeshId};
-use ::{Vertex};
+use pipeline::{Vertex};
 use fs;
 use geom;
 use screen::{Screen, ScreenCommand, EventStatus};

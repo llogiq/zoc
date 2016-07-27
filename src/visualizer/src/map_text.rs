@@ -11,7 +11,7 @@ use context::{Context};
 use texture::{load_texture_raw};
 use mesh::{Mesh};
 use text;
-use ::{Vertex};
+use pipeline::{Vertex};
 
 struct ShowTextCommand {
     pos: MapPos,

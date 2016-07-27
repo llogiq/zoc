@@ -7,7 +7,7 @@ use core::types::{ZInt};
 use fs;
 use context::{Context};
 use texture::{Texture, load_texture};
-use ::{Vertex};
+use pipeline::{Vertex};
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Clone)]
 pub struct MeshId{pub id: ZInt}

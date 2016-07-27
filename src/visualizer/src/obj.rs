@@ -7,7 +7,7 @@ use std::path::{Path};
 use std::str::{SplitWhitespace, Split, FromStr};
 use core::types::{ZFloat};
 use fs;
-use ::{Vertex};
+use pipeline::{Vertex};
 
 type Face = [[u16; 3]; 3];
 

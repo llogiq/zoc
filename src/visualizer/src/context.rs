@@ -8,7 +8,7 @@ use core::types::{Size2, ZInt};
 use screen::{ScreenCommand};
 use types::{ScreenPos};
 use texture::{load_texture_raw};
-use ::{pipe};
+use pipeline::{pipe};
 use rusttype;
 use gfx::traits::{Factory, FactoryExt};
 use gfx;
