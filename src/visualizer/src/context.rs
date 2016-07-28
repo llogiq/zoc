@@ -10,18 +10,18 @@ use types::{ScreenPos};
 use texture::{load_texture_raw};
 use pipeline::{pipe};
 use rusttype;
-use gfx::traits::{Factory, FactoryExt};
+use gfx::traits::{FactoryExt};
+use gfx::handle::{Program};
 use gfx;
 use gfx_gl;
 use gfx_glutin;
 use fs;
 use mesh::{Mesh};
 
-fn new_pso(
+fn new_shader(
     window: &glutin::Window,
     factory: &mut gfx_gl::Factory,
-    primitive: gfx::Primitive,
-) -> gfx::PipelineState<gfx_gl::Resources, pipe::Meta> {
+) -> Program<gfx_gl::Resources> {
     let shader_header = match window.get_api() {
         Api::OpenGl => fs::load("shader/pre_gl.glsl").into_inner(),
         Api::OpenGlEs | Api::WebGl => fs::load("shader/pre_gles.glsl").into_inner(),
@@ -30,15 +30,18 @@ fn new_pso(
     vertex_shader.extend(fs::load("shader/v.glsl").into_inner());
     let mut fragment_shader = shader_header;
     fragment_shader.extend(fs::load("shader/f.glsl").into_inner());
-    let vs = factory.create_shader_vertex(&vertex_shader).unwrap();
-    let ps = factory.create_shader_pixel(&fragment_shader).unwrap();
-    let shader_set = gfx::ShaderSet::Simple(vs, ps);
-    factory.create_pipeline_state(
-        &shader_set,
-        primitive,
-        gfx::state::Rasterizer::new_fill(),
-        pipe::new(),
-    ).unwrap()
+    factory.link_program(&vertex_shader, &fragment_shader).unwrap()
+}
+
+fn new_pso(
+    factory: &mut gfx_gl::Factory,
+    program: &Program<gfx_gl::Resources>,
+    primitive: gfx::Primitive,
+) -> gfx::PipelineState<gfx_gl::Resources, pipe::Meta> {
+    let rasterizer = gfx::state::Rasterizer::new_fill();
+    let pso = factory.create_pipeline_from_program(
+        program, primitive, rasterizer, pipe::new());
+    pso.unwrap()
 }
 
 fn get_win_size(window: &glutin::Window) -> Size2 {
@@ -88,8 +91,9 @@ impl Context {
         let (window, device, mut factory, main_color, main_depth)
             = gfx_glutin::init(builder);
         let encoder = factory.create_command_buffer().into();
-        let pso = new_pso(&window, &mut factory, gfx::Primitive::TriangleList);
-        let pso_wire = new_pso(&window, &mut factory, gfx::Primitive::LineList);
+        let program = new_shader(&window, &mut factory);
+        let pso = new_pso(&mut factory, &program, gfx::Primitive::TriangleList);
+        let pso_wire = new_pso(&mut factory, &program, gfx::Primitive::LineList);
         let sampler = factory.create_sampler_linear();
         let win_size = get_win_size(&window);
         // fake mesh for pipeline initialization
