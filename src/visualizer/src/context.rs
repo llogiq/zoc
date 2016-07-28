@@ -75,8 +75,8 @@ impl Context {
     pub fn new(tx: Sender<ScreenCommand>) -> Context {
         // TODO: read font name from config
         let font_data = fs::load("DroidSerif-Regular.ttf").into_inner();
-        let font: rusttype::Font<'static>
-             = rusttype::FontCollection::from_bytes(font_data).into_font().unwrap();
+        let font = rusttype::FontCollection::from_bytes(font_data)
+            .into_font().unwrap();
         let gl_version = GlRequest::GlThenGles {
             opengles_version: (2, 0),
             opengl_version: (2, 1),
@@ -93,8 +93,7 @@ impl Context {
         let sampler = factory.create_sampler_linear();
         let win_size = get_win_size(&window);
         // fake mesh for pipeline initialization
-        let indices: &[u16] = &[];
-        let (vb, _) = factory.create_vertex_buffer_with_slice(&[], indices);
+        let vb = factory.create_vertex_buffer(&[]);
         let fake_texture = load_texture_raw(&mut factory, 2, 2, &[0; 4]);
         let data = pipe::Data {
             basic_color: [1.0, 1.0, 1.0, 1.0],
